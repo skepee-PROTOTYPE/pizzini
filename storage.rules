@@ -1,0 +1,14 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow read access to XML files
+    match /pizzinifile.xml {
+      allow read, write: if true; // Adjust security as needed
+    }
+    
+    // Allow access to generated images
+    match /images/{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}

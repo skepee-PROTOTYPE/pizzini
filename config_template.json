@@ -1,0 +1,63 @@
+{
+  "_comment": "Configuration Template for Social Media Automation - Copy this file to config.json and fill in your actual credentials",
+  "social_media": {
+    "twitter": {
+      "enabled": true,
+      "api_key": "YOUR_TWITTER_API_KEY",
+      "api_secret": "YOUR_TWITTER_API_SECRET",
+      "access_token": "YOUR_TWITTER_ACCESS_TOKEN",
+      "access_token_secret": "YOUR_TWITTER_ACCESS_TOKEN_SECRET"
+    },
+    "instagram": {
+      "enabled": false,
+      "username": "YOUR_INSTAGRAM_USERNAME",
+      "password": "YOUR_INSTAGRAM_PASSWORD"
+    },
+    "facebook": {
+      "enabled": false,
+      "page_access_token": "YOUR_FACEBOOK_PAGE_ACCESS_TOKEN",
+      "page_id": "YOUR_FACEBOOK_PAGE_ID"
+    },
+    "linkedin": {
+      "enabled": false,
+      "access_token": "YOUR_LINKEDIN_ACCESS_TOKEN"
+    }
+  },
+  "posting_settings": {
+    "default_platforms": ["twitter"],
+    "include_images": true,
+    "include_hashtags": true,
+    "max_hashtags_per_platform": {
+      "twitter": 2,
+      "instagram": 10,
+      "facebook": 3,
+      "linkedin": 3
+    }
+  },
+  "scheduling": {
+    "enabled": true,
+    "mode": "recurring",
+    "recurring_settings": {
+      "interval_days": 7,
+      "start_time": "09:00",
+      "randomize_time": false
+    },
+    "random_settings": {
+      "posts_per_week": 3,
+      "time_windows": [
+        ["09:00", "12:00"],
+        ["15:00", "18:00"]
+      ]
+    }
+  },
+  "content_settings": {
+    "xml_file_path": "pizzinifile.xml",
+    "entry_ids_to_post": [],
+    "exclude_entry_ids": [],
+    "content_rotation": true
+  },
+  "security": {
+    "encrypt_credentials": false,
+    "credential_file": "credentials.enc"
+  }
+}
