@@ -42,6 +42,14 @@ firebase-debug.log
 # Logs
 *.log
 pizzini_automation.log
+token_health.log
+
+# Alert files (temporary)
+TOKEN_EXPIRATION_ALERT.txt
+
+# Test files
+test_notification.py
+test_*.py
 
 # IDE
 .vscode/
