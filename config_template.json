@@ -27,12 +27,27 @@
     "default_platforms": ["twitter"],
     "include_images": true,
     "include_hashtags": true,
+    "include_audio": false,
     "max_hashtags_per_platform": {
       "twitter": 2,
       "instagram": 10,
       "facebook": 3,
       "linkedin": 3
+    },
+    "audio_settings": {
+      "voice": "azure-calimero",
+      "add_intro": false,
+      "output_directory": "audio_output",
+      "azure_pitch": "-8%",
+      "azure_rate": "0.90"
     }
+  },
+  "podcast": {
+    "enabled": false,
+    "platform": "anchor",
+    "anchor_email": "YOUR_ANCHOR_EMAIL",
+    "anchor_password": "YOUR_ANCHOR_PASSWORD",
+    "auto_upload": false
   },
   "scheduling": {
     "enabled": true,

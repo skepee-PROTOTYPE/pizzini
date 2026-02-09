@@ -3,6 +3,12 @@
 # Social Media APIs
 tweepy>=4.14.0              # Twitter/X API client
 instagrapi>=1.19.0          # Instagram API client
+facebook-sdk>=3.1.0         # Facebook Graph API client
+
+# Audio generation
+gTTS>=2.5.0                 # Google Text-to-Speech for audio generation
+pydub>=0.25.1               # Audio file manipulation and processing
+azure-cognitiveservices-speech>=1.48.0  # Azure TTS (optional, high-quality voices)
 
 # Image processing for Instagram posts
 Pillow>=10.0.0              # Image generation and manipulation
