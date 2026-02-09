@@ -544,6 +544,62 @@ def scheduled_post(event):
                 post_errors.append(error_msg)
                 logger.error(f"Failed to post to Facebook: {str(e)}")
         
+        # Generate and upload podcast episode
+        podcast_config = config.get('podcast', {})
+        if podcast_config.get('enabled', False):
+            try:
+                import os
+                from automated_podcast_publisher import AutomatedPodcastPublisher
+                from content_formatter import ContentFormatter
+                
+                # Set Azure credentials from Firestore config
+                azure_config = config.get('azure', {})
+                if azure_config:
+                    os.environ['AZURE_SPEECH_KEY'] = azure_config.get('speech_key', '')
+                    os.environ['AZURE_SPEECH_REGION'] = azure_config.get('speech_region', '')
+                
+                # Generate audio
+                from social_media_poster import AudioGenerator
+                audio_gen = AudioGenerator()
+                episode_data = audio_gen.create_podcast_episode(
+                    title=entry["title"],
+                    content=entry["content"],
+                    date=entry.get("date", "")
+                )
+                
+                audio_path = episode_data['audio_path']
+                logger.info(f"Generated podcast audio: {audio_path}")
+                
+                # Upload to Spotify via RSS
+                podcast_publisher = AutomatedPodcastPublisher()
+                formatter = ContentFormatter()
+                podcast_description = formatter.format_for_platform(
+                    title=entry["title"],
+                    content=entry["content"],
+                    platform='linkedin',
+                    date=entry.get("date", ""),
+                    include_hashtags=False
+                )['text']
+                
+                podcast_result = podcast_publisher.publish_episode(
+                    audio_path=audio_path,
+                    title=entry["title"],
+                    description=podcast_description
+                )
+                
+                if podcast_result.get('success'):
+                    platforms_posted.append("spotify_podcast")
+                    logger.info(f"🎙️ Podcast episode published to Spotify!")
+                else:
+                    error_msg = f"Podcast: {podcast_result.get('error', 'Unknown error')}"
+                    post_errors.append(error_msg)
+                    logger.error(f"Failed to publish podcast: {podcast_result.get('error')}")
+                    
+            except Exception as e:
+                error_msg = f"Podcast: {type(e).__name__} - {str(e)}"
+                post_errors.append(error_msg)
+                logger.error(f"Failed to publish podcast: {str(e)}")
+        
         # Log posting activity to Firestore
         activity_ref = db.collection('posting_activity').document()
         activity_ref.set({

@@ -13,7 +13,6 @@ import requests
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 from content_formatter import ContentFormatter
-from gtts import gTTS
 import json
 
 # Set up logging
@@ -605,9 +604,15 @@ class SocialMediaManager:
         """Setup Facebook Page posting"""
         self.facebook_poster = FacebookPoster(page_access_token, page_id)
     
-    def setup_spotify_podcast(self, anchor_email: str, anchor_password: str):
-        """Setup Spotify Podcast posting via Anchor"""
-        self.spotify_poster = SpotifyPodcastPoster(anchor_email, anchor_password)
+    def setup_spotify_podcast(self, config_path: str = 'config.json'):
+        """Setup automated Spotify Podcast posting via RSS feed
+        
+        Args:
+            config_path: Path to configuration file with podcast info
+        """
+        from automated_podcast_publisher import AutomatedPodcastPublisher
+        self.spotify_poster = AutomatedPodcastPublisher(config_path)
+        logger.info("Automated podcast publisher initialized (RSS feed method)")
     
     def change_audio_voice(self, voice: str):
         """Change the audio generation voice
@@ -689,7 +694,7 @@ class SocialMediaManager:
                 result = self.facebook_poster.post_text(fb_text)
             results.append(result)
         
-        # Post to Spotify/Anchor
+        # Post to Spotify/Anchor via RSS feed
         if self.spotify_poster and include_audio and audio_path:
             podcast_description = self.content_formatter.format_for_platform(
                 title=title,
@@ -698,7 +703,7 @@ class SocialMediaManager:
                 date=date,
                 include_hashtags=False
             )['text']
-            result = self.spotify_poster.upload_episode(audio_path, title, podcast_description)
+            result = self.spotify_poster.publish_episode(audio_path, title, podcast_description)
             results.append(result)
         
         # Clean up temporary image

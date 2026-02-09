@@ -27,6 +27,14 @@ class ContentFormatter:
         '#pizzini', '#italian', '#wisdom', '#philosophy',
         '#thoughts', '#life', '#inspiration', '#reflection'
     ]
+
+    # Fixed Instagram hashtag set (used for every IG post, truncated to platform limit)
+    INSTAGRAM_FIXED_HASHTAGS = [
+        '#pizzini', '#filosofia', '#saggezza', '#riflessioni', '#pensieri',
+        '#ispirazione', '#meditazione', '#vita', '#crescita', '#italia',
+        '#italianquotes', '#philosophy', '#wisdom', '#mindset', '#reflection',
+        '#thoughts', '#innergrowth', '#dailywisdom', '#quoteoftheday', '#italianlife'
+    ]
     
     # Platform-specific emoji sets
     PLATFORM_EMOJIS = {
@@ -134,6 +142,9 @@ class ContentFormatter:
     
     def _select_hashtags(self, content: str, platform: str, max_count: int) -> List[str]:
         """Select appropriate hashtags based on content and platform"""
+        if platform == 'instagram':
+            return self.INSTAGRAM_FIXED_HASHTAGS[:max_count]
+
         selected_hashtags = []
         
         # Content-based hashtag selection
