@@ -12,6 +12,7 @@ from datetime import datetime
 import requests
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
+from content_formatter import ContentFormatter
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -75,12 +76,28 @@ class XPoster:
 class InstagramPoster:
     """Handles posting to Instagram using instagrapi"""
     
-    def __init__(self, username: str, password: str):
-        """Initialize Instagram client"""
+    def __init__(self, username: str, password: str, session_file: str = "instagram_session.json"):
+        """Initialize Instagram client with session persistence"""
         try:
             self.client = instagrapi.Client()
-            self.client.login(username, password)
-            logger.info("Instagram client initialized successfully")
+            self.session_file = session_file
+            
+            # Try to load existing session
+            if os.path.exists(session_file):
+                try:
+                    self.client.load_settings(session_file)
+                    self.client.login(username, password)
+                    logger.info("Instagram client initialized with saved session")
+                except Exception as e:
+                    logger.warning(f"Failed to load session, creating new: {e}")
+                    self.client = instagrapi.Client()
+                    self.client.login(username, password)
+                    self.client.dump_settings(session_file)
+            else:
+                # First time login
+                self.client.login(username, password)
+                self.client.dump_settings(session_file)
+                logger.info("Instagram client initialized and session saved")
         except Exception as e:
             logger.error(f"Failed to initialize Instagram client: {e}")
             raise
@@ -209,6 +226,7 @@ class SocialMediaManager:
         self.x_poster = None
         self.instagram_poster = None
         self.image_generator = ImageGenerator()
+        self.content_formatter = ContentFormatter()
     
     def setup_x(self, api_key: str, api_secret: str, access_token: str, access_token_secret: str):
         """Setup X (Twitter) posting"""
@@ -243,7 +261,14 @@ class SocialMediaManager:
         
         # Post to Instagram
         if self.instagram_poster and include_image and image_path:
-            instagram_caption = f"{title}\n\n{content}\n\n#pizzini #philosophy #wisdom #italian"
+            instagram_formatted = self.content_formatter.format_for_platform(
+                title=title,
+                content=content,
+                platform='instagram',
+                date=date,
+                include_hashtags=True
+            )
+            instagram_caption = instagram_formatted['text']
             result = self.instagram_poster.post_image_with_caption(image_path, instagram_caption)
             results.append(result)
         
