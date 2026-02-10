@@ -19,6 +19,14 @@ import json
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Try to import gTTS for text-to-speech
+try:
+    from gtts import gTTS
+    GTTS_AVAILABLE = True
+except ImportError:
+    GTTS_AVAILABLE = False
+    logger.warning("gTTS not available")
+
 # Try to import Azure Speech SDK
 try:
     import azure.cognitiveservices.speech as speechsdk

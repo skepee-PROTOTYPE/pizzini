@@ -66,3 +66,17 @@ desktop.ini
 # Temporary files
 *.tmp
 *.temp
+
+# Temporary batch/script files (debugging)
+cleanup_temp_files.bat
+check_*.bat
+deploy_*.bat
+fix_*.bat
+find_*.bat
+show_*.bat
+simple_*.bat
+ultra_*.bat
+validate_*.bat
+verify_*.bat
+upload_*.bat
+clean_*.bat
