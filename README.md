@@ -23,13 +23,17 @@ Automated daily publishing of Italian philosophical content to Facebook and podc
 
 ## Podcast Information
 
+<div align="center">
+  <img src="https://storage.googleapis.com/pizzini-91da9/podcast_cover.jpg" alt="I Pizzini di Don Villa Cover" width="300"/>
+</div>
+
 **I Pizzini di Don Villa**
 - 🎙️ **Title**: I Pizzini di Don Villa
 - 📖 **Description**: I pensieri e gli insegnamenti di Don Villa, condivisi giornalmente attraverso i suoi famosi pizzini
 - 👤 **Author**: Don Villa
+- 🎵 **Listen on Spotify**: [Listen Now](https://open.spotify.com/episode/3aYWqSNTrRBLsrK1F8EP2t?si=p48hE1JySYKA5W50hRUiQg&t=6)
 - 📡 **RSS Feed**: [https://storage.googleapis.com/pizzini-91da9/podcast_feed.xml](https://storage.googleapis.com/pizzini-91da9/podcast_feed.xml)
 - 📂 **Category**: Religion & Spirituality
-- 🎨 **Cover Art**: [View Cover](https://storage.googleapis.com/pizzini-91da9/podcast_cover.jpg)
 - 🔊 **Audio Format**: MP3, Italian language
 - ⏱️ **Frequency**: Daily episodes (6:00 AM Europe/Rome)
 - 📥 **Subscribe**: Copy RSS feed URL to your podcast app (Apple Podcasts, Spotify, etc.)

@@ -2,7 +2,7 @@
 echo Pushing final changes...
 
 git add -A
-git commit -m "docs: Remove non-existent website URL, update podcast info"
+git commit -m "docs: Add Spotify link and display podcast cover image in README"
 git push
 
 echo.
