@@ -7,6 +7,8 @@ facebook-sdk>=3.1.0         # Facebook Graph API client
 
 # Audio generation
 azure-cognitiveservices-speech>=1.48.0  # Azure TTS with Italian voices
+TTS>=0.22.0                 # Coqui TTS - Free, high-quality voices with emotion
+gTTS>=2.5.0                 # Google Text-to-Speech - Free basic voices
 pydub>=0.25.1               # Audio file manipulation and processing
 
 # Image processing

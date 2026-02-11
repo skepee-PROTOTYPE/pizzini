@@ -560,7 +560,12 @@ def scheduled_post(event):
                 
                 # Generate audio
                 from social_media_poster import AudioGenerator
-                audio_gen = AudioGenerator()
+                podcast_voice = podcast_config.get('voice', 'azure-calimero')
+                audio_gen = AudioGenerator(
+                    voice=podcast_voice,
+                    azure_key=azure_config.get('speech_key', ''),
+                    azure_region=azure_config.get('speech_region', '')
+                )
                 episode_data = audio_gen.create_podcast_episode(
                     title=entry["title"],
                     content=entry["content"],

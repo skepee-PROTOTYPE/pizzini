@@ -67,25 +67,26 @@ class AutomatedPodcastPublisher:
         """
         try:
             import firebase_admin
-            from firebase_admin import credentials, storage
+            from firebase_admin import storage
             
-            # Initialize Firebase if not already done
-            if not firebase_admin._apps:
-                cred = credentials.Certificate('serviceAccountKey.json')
-                
-                # Get project ID from credentials
-                with open('serviceAccountKey.json', 'r') as f:
-                    cred_data = json.load(f)
-                    project_id = cred_data.get('project_id')
-                
-                firebase_admin.initialize_app(cred, {
-                    'storageBucket': project_id  # Use bucket name without .appspot.com
-                })
+            # Get bucket name from Firebase app or use project bucket
+            bucket_name = None
+            try:
+                # Get project ID and use default bucket (without .appspot.com suffix)
+                if os.path.exists('serviceAccountKey.json'):
+                    with open('serviceAccountKey.json', 'r') as f:
+                        cred_data = json.load(f)
+                        project_id = cred_data.get('project_id')
+                        # Use the default storage bucket name (just project_id, not .appspot.com)
+                        bucket_name = project_id
+            except Exception as e:
+                logger.info(f"Could not read bucket name from service account: {e}")
             
-            bucket = storage.bucket()
-            
-            # Enable Storage if not enabled
-            logger.info("📤 Checking Firebase Storage...")
+            # Get storage bucket (works with already-initialized Firebase)
+            if bucket_name:
+                bucket = storage.bucket(bucket_name)
+            else:
+                bucket = storage.bucket()
             
             # Create blob path
             filename = os.path.basename(audio_path)
@@ -104,16 +105,13 @@ class AutomatedPodcastPublisher:
             
             return public_url
             
-        except ImportError:
-            logger.error("Firebase Admin SDK not installed. Install: pip install firebase-admin")
+        except ImportError as e:
+            logger.error(f"Firebase Admin SDK not installed: {e}")
             return None
         except Exception as e:
-            logger.warning(f"Firebase Storage upload failed: {e}")
-            logger.warning("💡 Don't worry! You can still host audio files manually.")
-            logger.warning("   Options:")
-            logger.warning("   1. Upload to Firebase Hosting (already configured)")
-            logger.warning("   2. Use any web hosting service")
-            logger.warning("   3. Use SoundCloud, Archive.org, or podcast hosting")
+            logger.error(f"Firebase Storage upload failed: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return None
     
     def add_episode_to_rss(self, audio_url: str, title: str, description: str,
@@ -308,10 +306,31 @@ class AutomatedPodcastPublisher:
         """Upload RSS feed to Firebase Storage"""
         try:
             from firebase_admin import storage
-            bucket = storage.bucket()
+            import json
+            
+            # Get bucket name
+            bucket_name = None
+            try:
+                if os.path.exists('serviceAccountKey.json'):
+                    with open('serviceAccountKey.json', 'r') as f:
+                        cred_data = json.load(f)
+                        project_id = cred_data.get('project_id')
+                        # Use the default storage bucket name (just project_id)
+                        bucket_name = project_id
+            except Exception as e:
+                logger.info(f"Using default bucket: {e}")
+            
+            if bucket_name:
+                bucket = storage.bucket(bucket_name)
+            else:
+                bucket = storage.bucket()
+                
             blob = bucket.blob('podcast_feed.xml')
             blob.upload_from_filename(rss_path, content_type='application/rss+xml')
             blob.make_public()
-            logger.info(f"✅ RSS feed uploaded to Firebase")
+            logger.info(f"✅ RSS feed uploaded to Firebase Storage")
         except Exception as e:
-            logger.warning(f"Could not upload RSS to Firebase: {e}")
+            logger.error(f"Could not upload RSS to Firebase: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+

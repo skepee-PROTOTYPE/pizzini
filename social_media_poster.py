@@ -27,6 +27,22 @@ except ImportError:
     AZURE_TTS_AVAILABLE = False
     logger.info("Azure TTS not available - using gTTS only")
 
+# Try to import Coqui TTS
+try:
+    from TTS.api import TTS as CoquiTTS
+    COQUI_TTS_AVAILABLE = True
+except ImportError:
+    COQUI_TTS_AVAILABLE = False
+    logger.info("Coqui TTS not available - install with: pip install TTS")
+
+# Try to import gTTS
+try:
+    from gtts import gTTS
+    GTTS_AVAILABLE = True
+except ImportError:
+    GTTS_AVAILABLE = False
+    logger.info("gTTS not available - install with: pip install gTTS")
+
 # Try to import pydub for audio duration (optional)
 try:
     from pydub import AudioSegment
@@ -211,11 +227,45 @@ class InstagramPoster:
             return {"platform": "Instagram Story", "success": False, "error": str(e)}
 
 class AudioGenerator:
-    """Generates audio files from text using Google Text-to-Speech or Azure TTS"""
+    """Generates audio files from text using Coqui TTS (free), Google TTS, or Azure TTS"""
+    
+    # Available Coqui TTS models for Italian (FREE, HIGH QUALITY)
+    COQUI_VOICE_OPTIONS = {
+        'priest-old-1': {
+            'model': 'tts_models/it/mai_male/glow-tts',
+            'description': '🎙️ FREE Old Priest #1 - Deep, contemplative Italian male (Traditional)',
+            'speed': 0.85,
+            'character': 'old_priest'
+        },
+        'priest-old-2': {
+            'model': 'tts_models/it/mai_male/glow-tts',
+            'description': '🎙️ FREE Old Priest #2 - Wise, authoritative Italian elder',
+            'speed': 0.88,
+            'character': 'elder_wise'
+        },
+        'priest-warm': {
+            'model': 'tts_models/it/mai_male/glow-tts',
+            'description': '🎙️ FREE Warm Priest - Compassionate, gentle Italian male',
+            'speed': 0.92,
+            'character': 'warm_priest'
+        },
+        'coqui-it-male': {
+            'model': 'tts_models/it/mai_male/glow-tts',
+            'description': '🎙️ FREE Italian Male - Standard neutral voice',
+            'speed': 1.0,
+            'character': 'neutral'
+        },
+        'coqui-it-female': {
+            'model': 'tts_models/it/mai_female/glow-tts',
+            'description': '🎙️ FREE Italian Female - Warm female voice',
+            'speed': 1.0,
+            'character': 'neutral'
+        },
+    }
     
     # Available gTTS language/accent options for Italian
     GTTS_VOICE_OPTIONS = {
-        'gtts-it-male-slow': {'lang': 'it', 'tld': 'com', 'slow': True, 'description': 'gTTS: Italian Male (Slower, deliberate - best for old priest)'},
+        'gtts-it-male-slow': {'lang': 'it', 'tld': 'com', 'slow': True, 'description': 'gTTS: Italian Male (Slower, deliberate - good for old priest)'},
         'gtts-it-male': {'lang': 'it', 'tld': 'com', 'slow': False, 'description': 'gTTS: Italian Male (Normal speed)'},
         'gtts-it-male-it': {'lang': 'it', 'tld': 'it', 'slow': True, 'description': 'gTTS: Italian Male Italy (Slower, traditional)'},
         'gtts-it-male-uk': {'lang': 'it', 'tld': 'co.uk', 'slow': True, 'description': 'gTTS: Italian Male UK (Slower, deeper)'},
@@ -231,13 +281,13 @@ class AudioGenerator:
         'azure-isabella': {'voice': 'it-IT-IsabellaNeural', 'description': 'Azure: Isabella - Female voice'},
     }
     
-    def __init__(self, voice: str = 'gtts-it-male-slow', output_dir: str = "audio_output", 
+    def __init__(self, voice: str = 'priest-old-1', output_dir: str = "audio_output", 
                  azure_key: str = None, azure_region: str = None,
                  azure_pitch: str = '-8%', azure_rate: str = '0.90'):
         """Initialize audio generator
         
         Args:
-            voice: Voice selection key from GTTS_VOICE_OPTIONS or AZURE_VOICE_OPTIONS
+            voice: Voice selection key from COQUI_VOICE_OPTIONS, GTTS_VOICE_OPTIONS or AZURE_VOICE_OPTIONS
             output_dir: Directory to save generated audio files
             azure_key: Azure Speech API key (required for Azure voices)
             azure_region: Azure region (e.g., 'westeurope', required for Azure voices)
@@ -250,6 +300,7 @@ class AudioGenerator:
         self.azure_region = azure_region
         self.azure_pitch = azure_pitch
         self.azure_rate = azure_rate
+        self.coqui_model = None
         
         # Determine which TTS service to use
         if voice.startswith('azure-'):
@@ -259,9 +310,33 @@ class AudioGenerator:
                 raise ValueError("Azure key and region required for Azure voices")
             self.tts_service = 'azure'
             voice_desc = self.AZURE_VOICE_OPTIONS.get(voice, {}).get('description', voice)
-        else:
+        elif voice in self.COQUI_VOICE_OPTIONS:
+            if not COQUI_TTS_AVAILABLE:
+                raise ImportError("Coqui TTS not available. Install: pip install TTS")
+            self.tts_service = 'coqui'
+            voice_config = self.COQUI_VOICE_OPTIONS[voice]
+            voice_desc = voice_config['description']
+            # Initialize Coqui model (lazy loading)
+            logger.info(f"Loading Coqui TTS model: {voice_config['model']}...")
+            self.coqui_model = CoquiTTS(voice_config['model'])
+        elif voice.startswith('gtts-'):
+            if not GTTS_AVAILABLE:
+                raise ImportError("gTTS not available. Install: pip install gTTS")
             self.tts_service = 'gtts'
             voice_desc = self.GTTS_VOICE_OPTIONS.get(voice, self.GTTS_VOICE_OPTIONS['gtts-it-male-slow'])['description']
+        else:
+            # Default to Coqui if available, fall back to gTTS
+            if COQUI_TTS_AVAILABLE:
+                self.voice = 'priest-old-1'
+                self.tts_service = 'coqui'
+                voice_config = self.COQUI_VOICE_OPTIONS['priest-old-1']
+                voice_desc = voice_config['description']
+                logger.info(f"Loading Coqui TTS model: {voice_config['model']}...")
+                self.coqui_model = CoquiTTS(voice_config['model'])
+            else:
+                self.voice = 'gtts-it-male-slow'
+                self.tts_service = 'gtts'
+                voice_desc = 'gTTS: Italian Male (Slower)'
         
         # Create output directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
@@ -295,6 +370,8 @@ class AudioGenerator:
             # Generate speech based on service
             if self.tts_service == 'azure':
                 self._generate_azure_speech(full_text, filepath)
+            elif self.tts_service == 'coqui':
+                self._generate_coqui_speech(full_text, filepath)
             else:
                 self._generate_gtts_speech(full_text, filepath)
             
@@ -304,6 +381,34 @@ class AudioGenerator:
         except Exception as e:
             logger.error(f"Failed to generate audio: {e}")
             raise
+    
+    def _generate_coqui_speech(self, text: str, filepath: str):
+        """Generate speech using Coqui TTS (free, high quality)"""
+        voice_config = self.COQUI_VOICE_OPTIONS[self.voice]
+        
+        # Generate speech with Coqui
+        wav_filepath = filepath.replace('.mp3', '.wav')
+        self.coqui_model.tts_to_file(
+            text=text,
+            file_path=wav_filepath,
+            speed=voice_config.get('speed', 1.0)
+        )
+        
+        # Convert WAV to MP3 if pydub is available
+        if PYDUB_AVAILABLE:
+            try:
+                from pydub import AudioSegment
+                audio = AudioSegment.from_wav(wav_filepath)
+                audio.export(filepath, format='mp3', bitrate='128k')
+                os.remove(wav_filepath)  # Clean up WAV file
+            except Exception as e:
+                logger.warning(f"Could not convert to MP3: {e}. Keeping WAV file.")
+                # Rename WAV to MP3 path for consistency
+                if os.path.exists(wav_filepath):
+                    os.rename(wav_filepath, filepath.replace('.mp3', '.wav'))
+        else:
+            # Keep WAV format if pydub not available
+            logger.info(f"pydub not available - audio saved as WAV format")
     
     def _generate_gtts_speech(self, text: str, filepath: str):
         """Generate speech using Google TTS"""
@@ -391,14 +496,20 @@ class AudioGenerator:
         """List all available voice options"""
         voices = []
         
+        # Add Coqui TTS voices (FREE, RECOMMENDED)
+        if COQUI_TTS_AVAILABLE:
+            for key, config in cls.COQUI_VOICE_OPTIONS.items():
+                voices.append({'key': key, 'service': '🆓 Coqui TTS (FREE - Recommended)', **config})
+        
         # Add gTTS voices
-        for key, config in cls.GTTS_VOICE_OPTIONS.items():
-            voices.append({'key': key, 'service': 'gTTS (Free)', **config})
+        if GTTS_AVAILABLE:
+            for key, config in cls.GTTS_VOICE_OPTIONS.items():
+                voices.append({'key': key, 'service': '🆓 gTTS (Free)', **config})
         
         # Add Azure voices if available
         if AZURE_TTS_AVAILABLE:
             for key, config in cls.AZURE_VOICE_OPTIONS.items():
-                voices.append({'key': key, 'service': 'Azure (Requires API key)', **config})
+                voices.append({'key': key, 'service': '💰 Azure (Paid - Requires API key)', **config})
         
         return voices
 
