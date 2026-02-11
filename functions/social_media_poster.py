@@ -1,3 +1,7 @@
+# Utility function for compatibility with ai_scheduled_post
+def get_facebook_api(access_token):
+    import facebook
+    return facebook.GraphAPI(access_token=access_token, version="18.0")
 """
 Social Media Posting Utilities
 Handles posting to X (Twitter) and Instagram with proper formatting

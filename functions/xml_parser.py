@@ -1,3 +1,31 @@
+# Utility function for AI agent compatibility
+def parse_xml_content(xml_string):
+    """
+    Parse XML content from a string and return a list of dicts (id, date, title, content).
+    """
+    import xml.etree.ElementTree as ET
+    from typing import List
+
+    entries: List[dict] = []
+    root = ET.fromstring(xml_string)
+    pizzini_elements = root.findall('.//pizzini/pizzini')
+    if not pizzini_elements:
+        pizzini_elements = root.findall('.//pizzini')
+        pizzini_elements = [elem for elem in pizzini_elements if elem.find('Id') is not None]
+
+    for pizzini_elem in pizzini_elements:
+        entry_id = pizzini_elem.find('Id').text if pizzini_elem.find('Id') is not None else "0"
+        date = pizzini_elem.find('Date').text if pizzini_elem.find('Date') is not None else ""
+        title = pizzini_elem.find('Title').text if pizzini_elem.find('Title') is not None else ""
+        content = pizzini_elem.find('Content').text if pizzini_elem.find('Content') is not None else ""
+        if title or content:
+            entries.append({
+                "id": int(entry_id) if entry_id else 0,
+                "date": date,
+                "title": title,
+                "description": content
+            })
+    return entries
 """
 XML Parser for Pizzini Content
 Reads and parses the pizzini XML file to extract social media content

@@ -8,7 +8,7 @@ from datetime import datetime
 
 # Initialize Firebase Admin
 import firebase_admin
-from firebase_admin import firestore
+from firebase_admin import firestore, storage
 
 if not firebase_admin._apps:
     firebase_admin.initialize_app()
@@ -642,3 +642,210 @@ def scheduled_post(event):
     except Exception as e:
         logger.error(f"Scheduled post failed: {str(e)}")
         return {"status": "error", "message": f"Scheduled posting failed: {str(e)}"}
+
+
+@https_fn.on_request()
+def ai_scheduled_post(req):
+    """
+    AI-powered scheduled post function.
+    Uses AI agent to decide when and what to post intelligently.
+    """
+    import logging
+    from ai_agent import PublishingAgent
+    from social_media_poster import AudioGenerator, get_facebook_api
+    from automated_podcast_publisher import AutomatedPodcastPublisher
+    from xml_parser import parse_xml_content
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Initialize Firestore and Storage
+        db = firestore.client()
+        bucket = storage.bucket('pizzini-91da9')
+        
+        # Load configuration from Firestore
+        config_ref = db.collection('config').document('social_media')
+        config_doc = config_ref.get()
+        
+        if not config_doc.exists:
+            logger.error("Configuration not found in Firestore")
+            return {"status": "error", "message": "Configuration not found"}
+        
+        config = config_doc.to_dict()
+        
+        # Initialize AI Agent
+        agent = PublishingAgent(config, db, bucket)
+        
+        logger.info("AI Agent initialized, checking if should post now...")
+        
+        # AI Decision: Should we post now?
+        should_post, reason = agent.should_post_now()
+        
+        if not should_post:
+            logger.info(f"AI decided not to post: {reason}")
+            return {
+                "status": "skipped",
+                "message": f"AI decided not to post now: {reason}",
+                "timestamp": datetime.now().isoformat()
+            }
+        
+        logger.info(f"AI decided to post: {reason}")
+        
+        # Parse XML to get available episodes
+        xml_content = config.get('content', {}).get('xml_content', '')
+        if not xml_content:
+            logger.error("No XML content found in config")
+            return {"status": "error", "message": "No XML content configured"}
+        
+        entries = parse_xml_content(xml_content)
+        
+        # Remove already posted entries
+        posted_ref = db.collection('posting_activity')
+        posted_docs = posted_ref.stream()
+        posted_guids = {doc.to_dict().get('guid') for doc in posted_docs if doc.to_dict().get('guid')}
+        
+        available_entries = [e for e in entries if e.get('guid') not in posted_guids]
+        
+        if not available_entries:
+            logger.warning("No available entries to post")
+            return {"status": "warning", "message": "All entries have been posted"}
+        
+        # AI Decision: Which episode to post?
+        selected_entry = agent.select_episode(available_entries)
+        
+        if not selected_entry:
+            logger.error("AI failed to select an episode")
+            return {"status": "error", "message": "AI could not select an episode"}
+        
+        logger.info(f"AI selected episode: {selected_entry.get('title')}")
+        
+        # Extract configurations
+        podcast_config = config.get('podcast', {})
+        azure_config = config.get('azure', {})
+        social_media = config.get('social_media', {})
+        
+        # Generate podcast audio
+        logger.info("Generating podcast audio with Azure TTS...")
+        
+        podcast_voice = podcast_config.get('voice', 'azure-calimero')
+        azure_key = azure_config.get('speech_key')
+        azure_region = azure_config.get('speech_region', 'uksouth')
+        
+        audio_gen = AudioGenerator(
+            use_azure=True,
+            voice=podcast_voice,
+            azure_key=azure_key,
+            azure_region=azure_region
+        )
+        
+        audio_file = audio_gen.generate_audio(
+            selected_entry['description'],
+            f"_azure_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3"
+        )
+        
+        if not audio_file:
+            logger.error("Failed to generate audio file")
+            return {"status": "error", "message": "Audio generation failed"}
+        
+        logger.info(f"Generated audio file: {audio_file}")
+        
+        # Initialize AutomatedPodcastPublisher
+        publisher = AutomatedPodcastPublisher(
+            firebase_app=firebase_admin.get_app(),
+            config=config
+        )
+        
+        # Add podcast episode
+        logger.info("Adding podcast episode...")
+        podcast_url = publisher.add_episode_from_file(
+            audio_file=audio_file,
+            title=selected_entry['title'],
+            description=selected_entry['description'],
+            pub_date=datetime.now()
+        )
+        
+        if not podcast_url:
+            logger.error("Failed to upload podcast")
+        else:
+            logger.info(f"Podcast uploaded: {podcast_url}")
+        
+        # Post to Facebook
+        facebook_post_id = None
+        post_errors = {}
+        
+        if social_media.get('facebook', {}).get('enabled', False):
+            try:
+                logger.info("Posting to Facebook...")
+                page_id = social_media['facebook']['page_id']
+                access_token = social_media['facebook']['page_access_token']
+                
+                fb_api = get_facebook_api(access_token)
+                
+                # Create post message
+                post_message = f"{selected_entry['title']}\n\n{selected_entry['description'][:500]}"
+                
+                result = fb_api.put_object(
+                    parent_object=page_id,
+                    connection_name='feed',
+                    message=post_message
+                )
+                
+                facebook_post_id = result.get('id')
+                logger.info(f"Posted to Facebook: {facebook_post_id}")
+                
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"Facebook posting failed: {error_msg}")
+                post_errors['facebook'] = error_msg
+        
+        # Validate post success with AI
+        validation_result = agent.validate_post_success(facebook_post_id, podcast_url)
+        
+        if not validation_result['success']:
+            logger.warning(f"Validation issues found: {validation_result['issues']}")
+        
+        # Log posting activity
+        platforms_posted = []
+        if facebook_post_id:
+            platforms_posted.append('facebook')
+        if podcast_url:
+            platforms_posted.append('podcast')
+        
+        db.collection('posting_activity').add({
+            'guid': selected_entry.get('guid'),
+            'title': selected_entry.get('title'),
+            'timestamp': datetime.now().isoformat(),
+            'platforms': platforms_posted,
+            'facebook_post_id': facebook_post_id,
+            'podcast_url': podcast_url,
+            'scheduled': True,
+            'ai_powered': True,
+            'ai_reason': reason,
+            'validation': validation_result
+        })
+        
+        logger.info(f"AI-powered post completed successfully")
+        
+        result = {
+            "status": "success" if platforms_posted else "error",
+            "message": "AI-powered post created successfully" if platforms_posted else "All platforms failed",
+            "ai_decision": reason,
+            "entry_title": selected_entry.get('title'),
+            "platforms": platforms_posted,
+            "validation": validation_result
+        }
+        
+        if facebook_post_id:
+            result["facebook_post_id"] = facebook_post_id
+        if podcast_url:
+            result["podcast_url"] = podcast_url
+        if post_errors:
+            result["errors"] = post_errors
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"AI-powered post failed: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"status": "error", "message": f"AI-powered posting failed: {str(e)}"}

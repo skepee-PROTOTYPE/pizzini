@@ -9,3 +9,4 @@ azure-cognitiveservices-speech>=1.48.0
 TTS>=0.22.0
 pydub>=0.25.1
 gTTS>=2.5.0
+google-generativeai>=0.8.0
