@@ -1,41 +1,44 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom">
+<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:ns0="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
   <channel>
     <title>I Pizzini di Don Villa</title>
     <description>I pensieri e gli insegnamenti di Don Villa, condivisi giornalmente attraverso i suoi famosi pizzini</description>
     <language>it</language>
     <link>https://pizzini-b5c63.web.app</link>
-    <itunes:author>Don Villa</itunes:author>
-    <itunes:email>skepee01@gmail.com</itunes:email>
-    <itunes:category text="Religion &amp; Spirituality"/>
-    <itunes:image href="https://storage.googleapis.com/pizzini-91da9/podcast_cover.jpg"/>
-    
+    <ns0:author>Don Villa</ns0:author>
+    <ns0:category text="Religion &amp; Spirituality"/>
+    <ns0:image href="https://storage.googleapis.com/pizzini-91da9/podcast_cover.jpg"/>
     <item>
-      <title>FESTA DELLA SANTISSIMA TRINITÀ</title>
-      <description>Episodio del 11 Febbraio 2026 - I pensieri di Don Villa sulla Santissima Trinità</description>
-      <pubDate>Tue, 11 Feb 2026 15:20:43 GMT</pubDate>
-      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260211_152040.mp3" type="audio/mpeg" length="3269510"/>
-      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260211_152040.mp3</guid>
-      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260211_152040.mp3</link>
+      <title>Pizzini MATRIMONIO TREInfatti mamma Laura ha sorri</title>
+      <description>Episodio: Pizzini MATRIMONIO TREInfatti mamma Laura ha sorri</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/Pizzini%20MATRIMONIO%20TREInfatti%20mamma%20Laura%20ha%20sorri_azure_20260213_142810.mp3" type="audio/mpeg" length="2823900"/>
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/Pizzini%20MATRIMONIO%20TREInfatti%20mamma%20Laura%20ha%20sorri_azure_20260213_142810.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/Pizzini%20MATRIMONIO%20TREInfatti%20mamma%20Laura%20ha%20sorri_azure_20260213_142810.mp3</guid>
+      <pubDate>Fri, 13 Feb 2026 14:28:14 GMT</pubDate>
     </item>
-    
     <item>
-      <title>Episodio del 11 Febbraio 2026</title>
-      <description>I pensieri quotidiani di Don Villa</description>
-      <pubDate>Tue, 11 Feb 2026 15:11:51 GMT</pubDate>
-      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260211_151148.mp3" type="audio/mpeg" length="2618018"/>
-      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260211_151148.mp3</guid>
-      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260211_151148.mp3</link>
+      <title>_azure_20260213_135647.mp3</title>
+      <description>Episodio: _azure_20260213_135647.mp3</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_135647.mp3" type="audio/mpeg" length="2561756"/>
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_135647.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_135647.mp3</guid>
+      <pubDate>Fri, 13 Feb 2026 13:56:50 GMT</pubDate>
     </item>
-    
     <item>
-      <title>AIUTO PER IL PIZZINO 1</title>
-      <description>Episodio del 9 Febbraio 2026 - I pensieri di Don Villa</description>
-      <pubDate>Sun, 09 Feb 2026 17:21:53 GMT</pubDate>
-      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/AIUTO PER IL PIZZINO 1_azure_20260209_153137.mp3" type="audio/mpeg" length="4246004"/>
-      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/AIUTO PER IL PIZZINO 1_azure_20260209_153137.mp3</guid>
-      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/AIUTO PER IL PIZZINO 1_azure_20260209_153137.mp3</link>
+      <title>_azure_20260213_135221.mp3</title>
+      <description>Episodio: _azure_20260213_135221.mp3</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_135221.mp3" type="audio/mpeg" length="3005434"/>
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_135221.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_135221.mp3</guid>
+      <pubDate>Fri, 13 Feb 2026 13:52:26 GMT</pubDate>
     </item>
-    
+    <item>
+      <title>_azure_20260213_050015.mp3</title>
+      <description>Episodio: _azure_20260213_050015.mp3</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_050015.mp3" type="audio/mpeg" length="3163276"/>
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_050015.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_050015.mp3</guid>
+      <pubDate>Fri, 13 Feb 2026 05:00:20 GMT</pubDate>
+    </item>
   </channel>
 </rss>

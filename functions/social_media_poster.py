@@ -280,7 +280,10 @@ class AudioGenerator:
             azure_rate: Speed adjustment for Azure voices (e.g., '0.88' for slower, contemplative)
         """
         self.voice = voice
-        self.output_dir = output_dir
+        # Determine a writable output directory (Cloud Functions only allow /tmp)
+        # Try the requested directory first, otherwise fall back to /tmp/audio_output
+        requested_output_dir = output_dir
+        self.output_dir = requested_output_dir
         self.azure_key = azure_key
         self.azure_region = azure_region
         self.azure_pitch = azure_pitch
@@ -323,8 +326,13 @@ class AudioGenerator:
                 self.tts_service = 'gtts'
                 voice_desc = 'gTTS: Italian Male (Slower)'
         
-        # Create output directory if it doesn't exist
-        os.makedirs(output_dir, exist_ok=True)
+        # Create output directory if it doesn't exist; fall back to /tmp on failure
+        try:
+            os.makedirs(self.output_dir, exist_ok=True)
+        except Exception:
+            # Use Cloud Functions writable temp directory
+            self.output_dir = "/tmp/audio_output"
+            os.makedirs(self.output_dir, exist_ok=True)
         
         logger.info(f"Audio generator initialized with: {voice_desc}")
     
@@ -421,8 +429,13 @@ class AudioGenerator:
             Dictionary with audio file path and metadata
         """
         try:
-            # Generate audio directly from content, no intro or date
-            audio_path = self.text_to_speech(content, title, add_intro=False)
+            # Sanitize text for Italian TTS to avoid reading abbreviations as punctuation
+            from content_formatter import ContentFormatter
+            formatter = ContentFormatter()
+            safe_text = formatter.sanitize_for_tts(content)
+
+            # Generate audio directly from sanitized content, no intro or date
+            audio_path = self.text_to_speech(safe_text, title, add_intro=False)
             
             return {
                 'audio_path': audio_path,

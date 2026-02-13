@@ -46,14 +46,34 @@ class ContentFormatter:
     
     def __init__(self):
         self.used_hashtags = set()  # Track used hashtags to avoid repetition
+
+    # Basic female names used to choose Santa vs San
+    FEMALE_NAMES = {
+        'maria','teresa','lucia','anna','cecilia','elisabetta','caterina','rita','chiara','giuseppina','paola'
+    }
+
+    # Common English→Italian saint names
+    EN_TO_IT_SAINTS = {
+        'peter': 'pietro',
+        'paul': 'paolo',
+        'john': 'giovanni',
+        'anthony': 'antonio',
+        'stephen': 'stefano',
+        'mary': 'maria',
+        'teresa': 'teresa',
+        'mark': 'marco',
+        'luke': 'luca'
+    }
     
     def format_for_platform(self, title: str, content: str, platform: str, 
                            date: str = "", include_hashtags: bool = True) -> Dict[str, str]:
         """Format content for a specific platform"""
         platform = platform.lower()
         limits = self.PLATFORM_LIMITS.get(platform, self.PLATFORM_LIMITS['twitter'])
-        
-        formatted_post = self._create_base_post(title, content, platform, limits)
+
+        # Sanitize text to avoid TTS oddities and social artefacts
+        safe_content = self.sanitize_for_social(content)
+        formatted_post = self._create_base_post(title, safe_content, platform, limits)
         
         if include_hashtags:
             hashtags = self._select_hashtags(content, platform, limits['hashtags'])
@@ -73,6 +93,65 @@ class ContentFormatter:
             'platform': platform,
             'within_limits': len(formatted_post) <= limits['text']
         }
+
+    def sanitize_for_social(self, content: str) -> str:
+        """Sanitize text for social posts (normalize punctuation/quotes/entities)."""
+        text = content or ""
+        # Normalize whitespace
+        text = re.sub(r"\s+", " ", text.strip())
+        # Replace XML/HTML entities
+        text = (text
+                .replace('&amp;', '&')
+                .replace('&quot;', '"')
+                .replace('&apos;', "'")
+                .replace('&lt;', '<')
+                .replace('&gt;', '>'))
+        # Normalize quotes
+        text = (text
+                .replace('“', '"').replace('”', '"')
+                .replace('‘', "'").replace('’', "'"))
+        # Remove stray tags
+        text = re.sub(r'<[^>]+>', '', text)
+        # Fix spacing around punctuation
+        text = re.sub(r'\s*([.!?,;:])\s*', r'\1 ', text)
+        return text.strip()
+
+    def sanitize_for_tts(self, content: str) -> str:
+        """Sanitize text specifically for Italian TTS.
+        - Expand abbreviations like 'S.' → 'San/Santa'
+        - Map 'St.'/'Saint' with English names to Italian (e.g., 'St. Peter' → 'San Pietro')
+        - Normalize punctuation to avoid spoken 'punto' from abbreviations
+        """
+        text = self.sanitize_for_social(content)
+
+        # SS. Trinità → Santissima Trinità
+        text = re.sub(r'\bSS\.?\s+Trinità\b', 'Santissima Trinità', text, flags=re.IGNORECASE)
+        # S. Messa → Santa Messa
+        text = re.sub(r'\bS\.?\s+Messa\b', 'Santa Messa', text, flags=re.IGNORECASE)
+
+        # Expand S. <Name> → San/Santa <Name>
+        def _expand_s_abbrev(m):
+            name = m.group(1)
+            base = name.lower()
+            title = 'Santa' if base in self.FEMALE_NAMES else 'San'
+            # Preserve original capitalization of name
+            return f"{title} {name}"
+        text = re.sub(r'\bS\.?\s+([A-ZÀ-Ü][a-zà-ü]+)\b', _expand_s_abbrev, text)
+
+        # Handle English saint forms: St. / Saint <Name>
+        def _expand_st_english(m):
+            raw = m.group(1)
+            base = raw.lower()
+            it = self.EN_TO_IT_SAINTS.get(base, raw)
+            title = 'Santa' if base in self.FEMALE_NAMES else 'San'
+            return f"{title} {it.capitalize()}"
+        text = re.sub(r'\bSt\.?\s+([A-Z][a-z]+)\b', _expand_st_english, text)
+        text = re.sub(r'\bSaint\s+([A-Z][a-z]+)\b', _expand_st_english, text)
+
+        # Avoid single-letter abbreviations followed by dot at line end causing 'punto' spoken
+        # Replace isolated " ." or trailing " ." with just a pause
+        text = re.sub(r'\s*\.$', '.', text)
+        return text.strip()
     
     def _create_base_post(self, title: str, content: str, platform: str, limits: Dict) -> str:
         """Create the base post content"""
@@ -126,19 +205,7 @@ class ContentFormatter:
     
     def _clean_content(self, content: str) -> str:
         """Clean and prepare content for social media"""
-        # Remove excessive whitespace
-        cleaned = re.sub(r'\s+', ' ', content.strip())
-        
-        # Fix punctuation spacing
-        cleaned = re.sub(r'\s*([.!?])\s*', r'\1 ', cleaned)
-        
-        # Remove any XML artifacts
-        cleaned = re.sub(r'<[^>]+>', '', cleaned)
-        
-        # Handle quotes properly
-        cleaned = cleaned.replace('«', '"').replace('»', '"')
-        
-        return cleaned
+        return self.sanitize_for_social(content)
     
     def _select_hashtags(self, content: str, platform: str, max_count: int) -> List[str]:
         """Select appropriate hashtags based on content and platform"""
@@ -225,8 +292,13 @@ class ContentFormatter:
     def _add_linkedin_formatting(self, post: str, title: str) -> str:
         """Add LinkedIn professional formatting"""
         # LinkedIn appreciates professional formatting
-        post = post.replace(title, f"💭 {title}")
-        return post
+        # Guard against empty title: replacing "" inserts between every character
+        safe_title = (title or "").strip()
+        if safe_title:
+            # Only replace first occurrence (the heading)
+            return post.replace(safe_title, f"💭 {safe_title}", 1)
+        # No title available: just prefix the post
+        return f"💭 {post}"
     
     def create_thread(self, title: str, content: str, platform: str = 'twitter') -> List[str]:
         """Create a thread for long content"""

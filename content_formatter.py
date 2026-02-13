@@ -46,6 +46,105 @@ class ContentFormatter:
     
     def __init__(self):
         self.used_hashtags = set()  # Track used hashtags to avoid repetition
+
+    # -------------------- Voice/Post helpers --------------------
+    _BIBLE_ABBR = {
+        r"\bMt\.\b": "Matteo",
+        r"\bMc\.\b": "Marco",
+        r"\bLc\.\b": "Luca",
+        r"\bGv\.\b": "Giovanni",
+        r"\bAt\.\b": "Atti",
+    }
+
+    _ROMAN_TO_INT = {
+        "I": 1, "II": 2, "III": 3, "IV": 4, "V": 5,
+        "VI": 6, "VII": 7, "VIII": 8, "IX": 9, "X": 10,
+    }
+
+    _NUM_TO_WORD = {
+        1: "uno", 2: "due", 3: "tre", 4: "quattro", 5: "cinque",
+        6: "sei", 7: "sette", 8: "otto", 9: "nove", 10: "dieci",
+    }
+
+    def format_title_for_voice(self, title: str) -> str:
+        """Convert a Title into a voice-friendly string.
+        Rules:
+        - Keep main title as-is.
+        - If a part marker is present in parentheses (UNO/DUE/… or roman/number), add "— parte <n>".
+        - Any other parenthetical note becomes a subtitle after a dash.
+        - Expand common abbreviations like "S.Pietro" → "San Pietro".
+        """
+        if not title:
+            return title
+        main = title
+        extras = []
+
+        # Extract parenthetical segments
+        parts = re.findall(r"\(([^)]+)\)", title)
+        if parts:
+            main = re.sub(r"\s*\(([^)]+)\)\s*", " ", title).strip()
+            for seg in parts:
+                seg_clean = seg.strip()
+                # Part markers (Italian words)
+                upper = seg_clean.upper()
+                if upper in {"UNO","DUE","TRE","QUATTRO","CINQUE","SEI","SETTE","OTTO","NOVE","DIECI"}:
+                    extras.append(f"parte {seg_clean.lower()}")
+                    continue
+                # Roman numerals
+                if upper in self._ROMAN_TO_INT:
+                    n = self._ROMAN_TO_INT[upper]
+                    extras.append(f"parte {self._NUM_TO_WORD.get(n, str(n))}")
+                    continue
+                # Plain numbers
+                if re.fullmatch(r"\d+", seg_clean):
+                    try:
+                        n = int(seg_clean)
+                        extras.append(f"parte {self._NUM_TO_WORD.get(n, str(n))}")
+                        continue
+                    except ValueError:
+                        pass
+                # Other notes become subtitles
+                extras.append(seg_clean)
+
+        # Expand abbreviations in main
+        spoken_main = self._expand_abbreviations_for_voice(main)
+
+        if extras:
+            return f"{spoken_main} — {', '.join(extras)}"
+        return spoken_main
+
+    def normalize_text_for_voice(self, text: str) -> str:
+        """Normalize content for voice output without changing source XML.
+        - Expand S./S.ta/S.to/SS. → San/Santa/Santo/Santi when followed by a name.
+        - Expand common Bible abbreviations (Mt., Gv., Lc., Mc.).
+        - Clean leftover punctuation spacing.
+        """
+        if not text:
+            return text
+        s = text
+        # Saint abbreviations
+        s = re.sub(r"\bSS\.?\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"Santi \1", s)
+        s = re.sub(r"\bS\.?ta\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"Santa \1", s)
+        s = re.sub(r"\bS\.?to\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"Santo \1", s)
+        s = re.sub(r"\bS\.?\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"San \1", s)
+        # Bible book abbreviations
+        for pat, rep in self._BIBLE_ABBR.items():
+            s = re.sub(pat, rep, s)
+        # Punctuation spacing tidy-up
+        s = re.sub(r"\s*([,;:.!?])\s*", r" \1 ", s)
+        s = re.sub(r"\s{2,}", " ", s).strip()
+        return s
+
+    def _expand_abbreviations_for_voice(self, text: str) -> str:
+        """Abbreviation expansion used by title voice formatting."""
+        s = text
+        s = re.sub(r"\bSS\.?\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"Santi \1", s)
+        s = re.sub(r"\bS\.?ta\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"Santa \1", s)
+        s = re.sub(r"\bS\.?to\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"Santo \1", s)
+        s = re.sub(r"\bS\.?\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"San \1", s)
+        for pat, rep in self._BIBLE_ABBR.items():
+            s = re.sub(pat, rep, s)
+        return s
     
     def format_for_platform(self, title: str, content: str, platform: str, 
                            date: str = "", include_hashtags: bool = True) -> Dict[str, str]:
@@ -225,8 +324,12 @@ class ContentFormatter:
     def _add_linkedin_formatting(self, post: str, title: str) -> str:
         """Add LinkedIn professional formatting"""
         # LinkedIn appreciates professional formatting
-        post = post.replace(title, f"💭 {title}")
-        return post
+        safe_title = (title or "").strip()
+        if safe_title:
+            # Only replace the first occurrence to avoid altering content
+            return post.replace(safe_title, f"💭 {safe_title}", 1)
+        # If title is empty, just prefix the post with the emoji
+        return f"💭 {post}"
     
     def create_thread(self, title: str, content: str, platform: str = 'twitter') -> List[str]:
         """Create a thread for long content"""

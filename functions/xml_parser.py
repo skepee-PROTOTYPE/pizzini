@@ -138,7 +138,7 @@ class PizziniXMLParser:
 
 # Example usage and test
 if __name__ == "__main__":
-    parser = PizziniXMLParser("pizzinifile.xml")
+    parser = PizziniXMLParser("pizzini.xml")
     entries = parser.parse()
     
     print(f"Found {len(entries)} entries:")

@@ -26,12 +26,26 @@ class AutomatedPodcastPublisher:
             self.config = json.load(f)
         
         self.podcast_config = self.config.get('podcast_info', {})
-        self.rss_file = 'podcast_feed.xml'
+        # Use a writable location for RSS; Cloud Functions only allow /tmp
+        base_dir = '.'
+        try:
+            # If current directory is not writable, use /tmp
+            test_path = os.path.join(base_dir, '.__rss_write_test__')
+            with open(test_path, 'wb') as _f:
+                _f.write(b'')
+            os.remove(test_path)
+        except Exception:
+            base_dir = '/tmp'
+        self.rss_file = os.path.join(base_dir, 'podcast_feed.xml')
         self.episodes = []
         
-        # Load existing RSS feed if it exists
-        if os.path.exists(self.rss_file):
-            self._load_existing_feed()
+        # Try to load existing feed from storage (authoritative), else local
+        try:
+            self._load_existing_feed_from_storage()
+        except Exception:
+            # Fallback to local file if present
+            if os.path.exists(self.rss_file):
+                self._load_existing_feed()
         
         logger.info("Automated Podcast Publisher initialized")
     
@@ -55,6 +69,20 @@ class AutomatedPodcastPublisher:
             logger.info(f"Loaded {len(self.episodes)} existing episodes from RSS feed")
         except Exception as e:
             logger.warning(f"Could not load existing feed: {e}")
+
+    def _load_existing_feed_from_storage(self):
+        """Download and load existing RSS feed from Firebase Storage."""
+        import firebase_admin
+        from firebase_admin import storage
+        # Use explicit bucket for consistency
+        bucket = storage.bucket('pizzini-91da9')
+        blob = bucket.blob('podcast_feed.xml')
+        if not blob.exists():
+            raise FileNotFoundError("podcast_feed.xml not found in storage")
+        # Download to local rss_file path
+        blob.download_to_filename(self.rss_file)
+        # Parse episodes
+        self._load_existing_feed()
     
     def upload_to_firebase(self, audio_path: str) -> Optional[str]:
         """Upload audio file to Firebase Storage and get public URL
@@ -115,7 +143,8 @@ class AutomatedPodcastPublisher:
             return None
     
     def add_episode_to_rss(self, audio_url: str, title: str, description: str,
-                          pub_date: Optional[datetime] = None, duration: int = 0):
+                          pub_date: Optional[datetime] = None, duration: int = 0,
+                          file_size: int = 0):
         """Add new episode to RSS feed
         
         Args:
@@ -128,13 +157,20 @@ class AutomatedPodcastPublisher:
         if pub_date is None:
             pub_date = datetime.now()
         
+        # Ensure RSS-safe text
+        safe_title = self._sanitize_for_rss(title.strip() if title else '')
+        if not safe_title:
+            safe_title = self._sanitize_for_rss((description or '')[:60].strip() + '...')
+        safe_description = self._sanitize_for_rss(description or '')
+
         episode = {
-            'title': title,
-            'description': description,
+            'title': safe_title,
+            'description': safe_description,
             'audio_url': audio_url,
             'pub_date': pub_date.strftime('%a, %d %b %Y %H:%M:%S GMT'),
             'guid': f"{self.podcast_config.get('website', '')}/episode/{pub_date.strftime('%Y%m%d%H%M%S')}",
-            'duration': duration
+            'duration': duration,
+            'file_size': int(file_size) if file_size and file_size > 0 else 0
         }
         
         self.episodes.insert(0, episode)  # Add at beginning (most recent first)
@@ -180,7 +216,8 @@ class AutomatedPodcastPublisher:
         ET.SubElement(owner, 'itunes:email').text = self.podcast_config.get('email', 'skepee01@gmail.com')
         
         # Self-referencing RSS URL (important for podcast platforms)
-        rss_url = self.podcast_config.get('rss_url', 'https://pizzini-b5c63.web.app/podcast_feed.xml')
+        # Use public GCS URL as canonical RSS URL
+        rss_url = self.podcast_config.get('rss_url', 'https://storage.googleapis.com/pizzini-91da9/podcast_feed.xml')
         ET.SubElement(channel, '{http://www.w3.org/2005/Atom}link', {
             'href': rss_url,
             'rel': 'self',
@@ -190,9 +227,9 @@ class AutomatedPodcastPublisher:
         # Add all episodes
         for episode in self.episodes:
             item = ET.SubElement(channel, 'item')
-            ET.SubElement(item, 'title').text = episode['title']
-            ET.SubElement(item, 'description').text = episode['description']
-            ET.SubElement(item, 'itunes:summary').text = episode['description']
+            ET.SubElement(item, 'title').text = self._sanitize_for_rss(episode.get('title',''))
+            ET.SubElement(item, 'description').text = self._sanitize_for_rss(episode.get('description',''))
+            ET.SubElement(item, 'itunes:summary').text = self._sanitize_for_rss(episode.get('description',''))
             ET.SubElement(item, 'pubDate').text = episode['pub_date']
             ET.SubElement(item, 'guid', {'isPermaLink': 'false'}).text = episode['guid']
             ET.SubElement(item, 'link').text = episode['audio_url']
@@ -201,7 +238,7 @@ class AutomatedPodcastPublisher:
             ET.SubElement(item, 'enclosure', {
                 'url': episode['audio_url'],
                 'type': 'audio/mpeg',
-                'length': '1'  # Will be updated with actual file size
+                'length': str(episode.get('file_size', 1) or 1)
             })
             
             if episode.get('duration', 0) > 0:
@@ -249,8 +286,14 @@ class AutomatedPodcastPublisher:
                 logger.warning(f"📤 You need to upload {audio_path} to your web hosting")
                 logger.warning(f"    and make it accessible at: {audio_url}")
             
-            # Step 2: Add to RSS feed
-            self.add_episode_to_rss(audio_url, title, description)
+            # Compute file size for enclosure
+            try:
+                file_size = os.path.getsize(audio_path)
+            except Exception:
+                file_size = 0
+
+            # Step 2: Add to RSS feed with file size
+            self.add_episode_to_rss(audio_url, title, description, file_size=file_size)
             
             # Step 3: Regenerate RSS feed
             rss_path = self.generate_rss_feed()
@@ -320,17 +363,36 @@ class AutomatedPodcastPublisher:
             except Exception as e:
                 logger.info(f"Using default bucket: {e}")
             
-            if bucket_name:
-                bucket = storage.bucket(bucket_name)
-            else:
-                bucket = storage.bucket()
+            # Always use explicit project bucket to avoid mismatches
+            bucket = storage.bucket('pizzini-91da9')
                 
             blob = bucket.blob('podcast_feed.xml')
-            blob.upload_from_filename(rss_path, content_type='application/rss+xml')
+            # Include charset to avoid mojibake in some clients
+            blob.upload_from_filename(rss_path, content_type='application/rss+xml; charset=utf-8')
             blob.make_public()
             logger.info(f"✅ RSS feed uploaded to Firebase Storage")
         except Exception as e:
             logger.error(f"Could not upload RSS to Firebase: {e}")
             import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
+
+    def _sanitize_for_rss(self, text: str) -> str:
+        """Make text safe for broad RSS readers: strip emojis/control chars, normalize whitespace."""
+        try:
+            import re
+            s = text or ''
+            # Remove control characters except basic whitespace
+            s = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F]", " ", s)
+            # Strip common emoji ranges (Supplemental Symbols and Pictographs, Emoticons)
+            s = re.sub(r"[\U0001F300-\U0001FAFF]", "", s)
+            s = re.sub(r"[\U0001F600-\U0001F64F]", "", s)
+            # Normalize spaces
+            s = re.sub(r"\s+", " ", s).strip()
+            return s
+        except Exception:
+            # Fallback: return ascii-only approximation
+            try:
+                return (text or '').encode('ascii', 'ignore').decode('ascii').strip()
+            except Exception:
+                return (text or '').strip()
 

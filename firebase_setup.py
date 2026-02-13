@@ -21,8 +21,9 @@ def setup_firebase_config(config_file='config.json'):
             return False
         
         cred = credentials.Certificate('serviceAccountKey.json')
+        # Initialize with the actual GCS bucket used by the project
         initialize_app(cred, {
-            'storageBucket': 'pizzini-91da9.appspot.com'  # Your actual project ID
+            'storageBucket': 'pizzini-91da9'
         })
         
         # Load local config
@@ -41,12 +42,13 @@ def setup_firebase_config(config_file='config.json'):
         print(f"❌ Failed to setup Firebase config: {e}")
         return False
 
-def upload_xml_content(xml_file='pizzinifile.xml'):
+def upload_xml_content(xml_file='pizzini.xml'):
     """Upload XML content to Firebase Storage"""
     try:
         # Upload XML file to Storage
-        bucket = storage.bucket()
-        blob = bucket.blob('pizzinifile.xml')
+        # Use explicit bucket to avoid default appspot bucket mismatch
+        bucket = storage.bucket('pizzini-91da9')
+        blob = bucket.blob('pizzini.xml')
         
         with open(xml_file, 'r', encoding='utf-8') as f:
             blob.upload_from_string(f.read(), content_type='application/xml')
@@ -70,7 +72,7 @@ def test_functions():
 def main():
     parser = argparse.ArgumentParser(description='Setup Pizzini automation on Firebase')
     parser.add_argument('--config', default='config.json', help='Configuration file')
-    parser.add_argument('--xml', default='pizzinifile.xml', help='XML content file')
+    parser.add_argument('--xml', default='pizzini.xml', help='XML content file')
     parser.add_argument('--test', action='store_true', help='Show test instructions')
     
     args = parser.parse_args()

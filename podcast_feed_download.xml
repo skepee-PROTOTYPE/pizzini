@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:ns0="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+  <channel>
+    <title>I Pizzini di Don Villa</title>
+    <description>I pensieri e gli insegnamenti di Don Villa, condivisi giornalmente attraverso i suoi famosi pizzini</description>
+    <language>it</language>
+    <link>https://pizzini-b5c63.web.app</link>
+    <ns0:author>Don Villa</ns0:author>
+    <ns0:category text="Religion &amp; Spirituality"/>
+    <ns0:image href="https://storage.googleapis.com/pizzini-91da9/podcast_cover.jpg"/>
+    <item>
+      <title>FESTA DELLA SANTISSIMA TRINITÀ</title>
+      <description>Episodio: FESTA DELLA SANTISSIMA TRINITÀ</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260211_152040.mp3" type="audio/mpeg" length="3269510"/>
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260211_152040.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260211_152040.mp3</guid>
+      <pubDate>Wed, 11 Feb 2026 15:20:43 GMT</pubDate>
+    </item>
+    <item>
+      <title>Episodio del 11 Febbraio 2026</title>
+      <description>Episodio: Episodio del 11 Febbraio 2026</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260211_151148.mp3" type="audio/mpeg" length="2618018"/>
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260211_151148.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260211_151148.mp3</guid>
+      <pubDate>Wed, 11 Feb 2026 15:11:51 GMT</pubDate>
+    </item>
+    <item>
+      <title>AIUTO PER IL PIZZINO 1</title>
+      <description>Episodio: AIUTO PER IL PIZZINO 1</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/AIUTO%20PER%20IL%20PIZZINO%201_azure_20260209_153137.mp3" type="audio/mpeg" length="4246004"/>
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/AIUTO%20PER%20IL%20PIZZINO%201_azure_20260209_153137.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/AIUTO%20PER%20IL%20PIZZINO%201_azure_20260209_153137.mp3</guid>
+      <pubDate>Mon, 09 Feb 2026 17:21:53 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

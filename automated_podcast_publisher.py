@@ -310,7 +310,8 @@ class AutomatedPodcastPublisher:
             from firebase_admin import storage
             bucket = storage.bucket()
             blob = bucket.blob('podcast_feed.xml')
-            blob.upload_from_filename(rss_path, content_type='application/rss+xml')
+            # Include charset to ensure readers decode correctly
+            blob.upload_from_filename(rss_path, content_type='application/rss+xml; charset=utf-8')
             blob.make_public()
             logger.info(f"✅ RSS feed uploaded to Firebase")
         except Exception as e:
