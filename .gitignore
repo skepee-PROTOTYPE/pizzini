@@ -80,3 +80,6 @@ validate_*.bat
 verify_*.bat
 upload_*.bat
 clean_*.bat
+
+# Local working files
+rework files/
