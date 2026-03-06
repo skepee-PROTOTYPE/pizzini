@@ -385,19 +385,44 @@ class AudioGenerator:
         )
         tts.save(filepath)
     
-    def _generate_azure_speech(self, text: str, filepath: str):
-        """Generate speech using Azure Cognitive Services with SSML for expression"""
+    def _generate_azure_speech(self, text: str, filepath: str,
+                               announcement_title: str = ""):
+        """Generate speech using Azure Cognitive Services with SSML for expression.
+
+        When announcement_title is provided the title is read in title-case (so
+        ALL-CAPS words like 'LA MOLLA' are not spelled out by the engine),
+        followed by a 1.5 s pause before the body text.
+        """
+        import html as html_lib
         # Lazy import - only load when needed
         import azure.cognitiveservices.speech as speechsdk
-        
+
         speech_config = speechsdk.SpeechConfig(subscription=self.azure_key, region=self.azure_region)
-        
+
         # Get voice name from configuration
         voice_config = self.AZURE_VOICE_OPTIONS[self.voice]
         voice_name = voice_config['voice']
-        
-        # Create SSML with prosody adjustments for old priest voice
-        ssml_text = f"""
+
+        def _title_case_for_tts(s: str) -> str:
+            def fix_word(w: str) -> str:
+                return w.capitalize() if len(w) > 1 and w.isupper() else w
+            return ' '.join(fix_word(w) for w in s.split())
+
+        if announcement_title:
+            title_ssml = html_lib.escape(_title_case_for_tts(announcement_title))
+            body_ssml  = html_lib.escape(text)
+            ssml_text = (
+                f"<speak version='1.0' "
+                f"xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='it-IT'>"
+                f"<voice name='{voice_name}'>"
+                f"<emphasis level='moderate'><prosody rate='{self.azure_rate}' pitch='+2%'>{title_ssml}.</prosody></emphasis>"
+                f"<break time='1500ms'/>"
+                f"<prosody rate='{self.azure_rate}' pitch='{self.azure_pitch}'>{body_ssml}</prosody>"
+                f"</voice></speak>"
+            )
+        else:
+            # Plain content path — no title announcement
+            ssml_text = f"""
         <speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='it-IT'>
             <voice name='{voice_name}'>
                 <prosody rate='{self.azure_rate}' pitch='{self.azure_pitch}'>
@@ -429,13 +454,27 @@ class AudioGenerator:
             Dictionary with audio file path and metadata
         """
         try:
-            # Sanitize text for Italian TTS to avoid reading abbreviations as punctuation
+            # Normalize title and content for better voice output.
             from content_formatter import ContentFormatter
             formatter = ContentFormatter()
-            safe_text = formatter.sanitize_for_tts(content)
+            normalized_title = formatter.format_title_for_voice(title)
+            normalized_content = formatter.normalize_text_for_voice(content)
 
-            # Generate audio directly from sanitized content, no intro or date
-            audio_path = self.text_to_speech(safe_text, title, add_intro=False)
+            if self.tts_service == 'azure':
+                # Azure TTS: SSML with title announcement + 1.5 s break + body
+                import os as _os
+                safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_'))[:50]
+                from datetime import datetime as _dt
+                timestamp = _dt.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"{safe_title}_azure_{timestamp}.mp3"
+                audio_path = _os.path.join(self.output_dir, filename)
+                self._generate_azure_speech(
+                    normalized_content, audio_path,
+                    announcement_title=normalized_title,
+                )
+            else:
+                # Other TTS services: pass normalized content (no title spoken in audio)
+                audio_path = self.text_to_speech(normalized_content, normalized_title, add_intro=False)
             
             return {
                 'audio_path': audio_path,

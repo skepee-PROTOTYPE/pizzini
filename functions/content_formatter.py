@@ -112,8 +112,9 @@ class ContentFormatter:
                 .replace('‘', "'").replace('’', "'"))
         # Remove stray tags
         text = re.sub(r'<[^>]+>', '', text)
-        # Fix spacing around punctuation
-        text = re.sub(r'\s*([.!?,;:])\s*', r'\1 ', text)
+        # Fix spacing around punctuation: remove space before, ensure space after
+        text = re.sub(r'\s+([.!?,;:])', r'\1', text)
+        text = re.sub(r'([.!?,;:])([A-ZÀ-Üa-zà-ÿ(])', r'\1 \2', text)
         return text.strip()
 
     def sanitize_for_tts(self, content: str) -> str:

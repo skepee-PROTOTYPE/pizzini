@@ -76,6 +76,8 @@ class ContentFormatter:
         """
         if not title:
             return title
+        # Strip dangling open parentheses that have no matching closing bracket
+        title = re.sub(r'\([^)]*$', '', title).strip()
         main = title
         extras = []
 
@@ -115,6 +117,11 @@ class ContentFormatter:
 
     def normalize_text_for_voice(self, text: str) -> str:
         """Normalize content for voice output without changing source XML.
+        - Insert missing spaces after sentence-ending punctuation (.,?!) before a word.
+        - Insert missing space before opening parenthesis.
+        - Remove closing guillemet » / « and replace with nothing or a comma.
+        - Expand Italian abbreviation ecc. → eccetera.
+        - Remove slashes (verse/line separators that TTS reads aloud as 'slash').
         - Expand S./S.ta/S.to/SS. → San/Santa/Santo/Santi when followed by a name.
         - Expand common Bible abbreviations (Mt., Gv., Lc., Mc.).
         - Clean leftover punctuation spacing.
@@ -122,6 +129,20 @@ class ContentFormatter:
         if not text:
             return text
         s = text
+        # Fix missing spaces after sentence-ending punctuation followed by a capital letter
+        # e.g. "molle.Se" → "molle. Se", "sonno.Ma" → "sonno. Ma"
+        s = re.sub(r'([.!?])([A-ZÀ-Ü])', r'\1 \2', s)
+        # Fix missing space before opening parenthesis when preceded by a letter/digit
+        # e.g. "causa(questa" → "causa (questa"
+        s = re.sub(r'([a-zA-Zà-ÿ\d])\(', r'\1 (', s)
+        # Remove guillemets (typographic quote marks common in Italian texts)
+        s = s.replace('»', '').replace('«', '')
+        # Expand ecc. → "e così via." (smoother in TTS than "eccetera" whose "ecc" sounds like "itch")
+        s = re.sub(r'\becc\.\s*', 'e così via. ', s)
+        # Remove slashes - in liturgical/religious Italian text these appear as
+        # verse or line separators (e.g. «text / text») and should not be read aloud
+        s = re.sub(r'\s*/\s*', ' ', s)
+        s = re.sub(r'^/+|/+$', '', s).strip()
         # Saint abbreviations
         s = re.sub(r"\bSS\.?\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"Santi \1", s)
         s = re.sub(r"\bS\.?ta\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"Santa \1", s)
@@ -130,8 +151,9 @@ class ContentFormatter:
         # Bible book abbreviations
         for pat, rep in self._BIBLE_ABBR.items():
             s = re.sub(pat, rep, s)
-        # Punctuation spacing tidy-up
-        s = re.sub(r"\s*([,;:.!?])\s*", r" \1 ", s)
+        # Punctuation spacing tidy-up: remove spaces before punctuation, ensure space after
+        s = re.sub(r'\s+([,;:.!?])', r'\1', s)  # strip accidental space before punct
+        s = re.sub(r'([,;:.!?])([A-ZÀ-Üa-zà-ÿ(])', r'\1 \2', s)  # space after if missing
         s = re.sub(r"\s{2,}", " ", s).strip()
         return s
 

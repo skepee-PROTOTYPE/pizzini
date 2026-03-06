@@ -3,10 +3,9 @@ Social Media Posting Utilities
 Handles posting to X (Twitter) and Instagram with proper formatting
 """
 
-import tweepy
-import instagrapi
 from typing import Optional, Dict, Any, List
 import os
+import re
 import logging
 from datetime import datetime
 import requests
@@ -19,6 +18,20 @@ import json
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+try:
+    import tweepy
+    TWEEPY_AVAILABLE = True
+except ImportError:
+    TWEEPY_AVAILABLE = False
+    logger.info("tweepy not available - X/Twitter posting disabled. Install: pip install tweepy")
+
+try:
+    import instagrapi
+    INSTAGRAPI_AVAILABLE = True
+except ImportError:
+    INSTAGRAPI_AVAILABLE = False
+    logger.info("instagrapi not available - Instagram posting disabled. Install: pip install instagrapi")
+
 # Try to import Azure Speech SDK
 try:
     import azure.cognitiveservices.speech as speechsdk
@@ -26,6 +39,14 @@ try:
 except ImportError:
     AZURE_TTS_AVAILABLE = False
     logger.info("Azure TTS not available - using gTTS only")
+
+# Try to import Google Cloud Text-to-Speech (Neural2 - high quality)
+try:
+    from google.cloud import texttospeech as gcloud_tts
+    CLOUD_TTS_AVAILABLE = True
+except ImportError:
+    CLOUD_TTS_AVAILABLE = False
+    logger.info("Google Cloud TTS not available - install: pip install google-cloud-texttospeech")
 
 # Try to import Coqui TTS
 try:
@@ -56,6 +77,8 @@ class XPoster:
     
     def __init__(self, api_key: str, api_secret: str, access_token: str, access_token_secret: str):
         """Initialize X API client"""
+        if not TWEEPY_AVAILABLE:
+            raise ImportError("tweepy not installed. Run: pip install tweepy")
         try:
             # Twitter API v2 client
             self.client = tweepy.Client(
@@ -181,6 +204,8 @@ class InstagramPoster:
     
     def __init__(self, username: str, password: str, session_file: str = "instagram_session.json"):
         """Initialize Instagram client with session persistence"""
+        if not INSTAGRAPI_AVAILABLE:
+            raise ImportError("instagrapi not installed. Run: pip install instagrapi")
         try:
             self.client = instagrapi.Client()
             self.session_file = session_file
@@ -280,6 +305,31 @@ class AudioGenerator:
         'azure-elsa': {'voice': 'it-IT-ElsaNeural', 'description': 'Azure: Elsa - Female voice'},
         'azure-isabella': {'voice': 'it-IT-IsabellaNeural', 'description': 'Azure: Isabella - Female voice'},
     }
+
+    # Google Cloud TTS Neural2 voices for Italian (highest quality, requires GCP project)
+    CLOUD_TTS_VOICE_OPTIONS = {
+        'cloudtts-it-male': {
+            'voice': 'it-IT-Neural2-C',
+            'language_code': 'it-IT',
+            'speaking_rate': 0.92,
+            'pitch': -4.0,
+            'description': 'Google Cloud TTS: Neural2 Italian Male (natural, high quality)',
+        },
+        'cloudtts-it-male-slow': {
+            'voice': 'it-IT-Neural2-C',
+            'language_code': 'it-IT',
+            'speaking_rate': 0.85,
+            'pitch': -5.0,
+            'description': 'Google Cloud TTS: Neural2 Italian Male (slow, contemplative - ideal for priest)',
+        },
+        'cloudtts-it-female': {
+            'voice': 'it-IT-Neural2-A',
+            'language_code': 'it-IT',
+            'speaking_rate': 0.90,
+            'pitch': 0.0,
+            'description': 'Google Cloud TTS: Neural2 Italian Female (natural)',
+        },
+    }
     
     def __init__(self, voice: str = 'priest-old-1', output_dir: str = "audio_output", 
                  azure_key: str = None, azure_region: str = None,
@@ -303,7 +353,14 @@ class AudioGenerator:
         self.coqui_model = None
         
         # Determine which TTS service to use
-        if voice.startswith('azure-'):
+        if voice.startswith('cloudtts-'):
+            if not CLOUD_TTS_AVAILABLE:
+                raise ImportError("Google Cloud TTS not available. Install: pip install google-cloud-texttospeech")
+            if voice not in self.CLOUD_TTS_VOICE_OPTIONS:
+                raise ValueError(f"Unknown Cloud TTS voice: {voice}. Choose from: {list(self.CLOUD_TTS_VOICE_OPTIONS)}")
+            self.tts_service = 'cloudtts'
+            voice_desc = self.CLOUD_TTS_VOICE_OPTIONS[voice]['description']
+        elif voice.startswith('azure-'):
             if not AZURE_TTS_AVAILABLE:
                 raise ImportError("Azure TTS not available. Install: pip install azure-cognitiveservices-speech")
             if not azure_key or not azure_region:
@@ -363,13 +420,15 @@ class AudioGenerator:
             # Create filename
             safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_'))[:50]
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            service_prefix = 'azure' if self.tts_service == 'azure' else 'gtts'
+            service_prefix = {'azure': 'azure', 'cloudtts': 'cloudtts', 'coqui': 'coqui'}.get(self.tts_service, 'gtts')
             filename = f"{safe_title}_{service_prefix}_{timestamp}.mp3"
             filepath = os.path.join(self.output_dir, filename)
             
             # Generate speech based on service
             if self.tts_service == 'azure':
                 self._generate_azure_speech(full_text, filepath)
+            elif self.tts_service == 'cloudtts':
+                self._generate_cloud_tts_speech(full_text, filepath)
             elif self.tts_service == 'coqui':
                 self._generate_coqui_speech(full_text, filepath)
             else:
@@ -382,6 +441,89 @@ class AudioGenerator:
             logger.error(f"Failed to generate audio: {e}")
             raise
     
+    def _build_ssml_for_pizzini(self, title: str, text: str) -> str:
+        """Build SSML for a Pizzini episode: title with emphasis, then content with pitch.
+        
+        The SSML announces the title (with emphasis), pauses 1 second, then reads
+        the content at a lower pitch for a contemplative, priest-like tone.
+        speaking_rate is set globally via AudioConfig in _generate_cloud_tts_speech.
+        """
+        import html as html_lib
+
+        def clean_for_ssml(s: str) -> str:
+            # Remove slashes (verse/line separators)
+            s = re.sub(r'\s*/\s*', ' ', s)
+            # Remove dangling open parentheses
+            s = re.sub(r'\([^)]*$', '', s).strip()
+            # Strip XML-illegal control characters
+            s = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', ' ', s)
+            # Collapse whitespace
+            s = re.sub(r'\s+', ' ', s).strip()
+            return html_lib.escape(s)
+
+        def title_case_for_tts(s: str) -> str:
+            """Convert ALL-CAPS words to Title Case so TTS reads them as Italian
+            words rather than spelling them out as acronyms.
+            Single-letter tokens are left as-is (e.g. 'L' → 'L').
+            """
+            def fix_word(w: str) -> str:
+                if len(w) > 1 and w.isupper():
+                    return w.capitalize()
+                return w
+            return ' '.join(fix_word(w) for w in s.split())
+
+        title_ssml = clean_for_ssml(title_case_for_tts(title))
+        text_ssml = clean_for_ssml(text)
+        pitch = self.CLOUD_TTS_VOICE_OPTIONS.get(self.voice, {}).get('pitch', -4.0)
+
+        return (
+            f'<speak version="1.0" xml:lang="it-IT">'
+            f'<emphasis level="moderate"><prosody pitch="+2.0%">{title_ssml}.</prosody></emphasis>'
+            f'<break time="1.5s"/>'
+            f'<prosody pitch="{pitch:+.1f}%">{text_ssml}</prosody>'
+            f'</speak>'
+        )
+
+    def _generate_cloud_tts_speech(self, text: str, filepath: str,
+                                   announcement_title: str = ""):
+        """Generate speech using Google Cloud Text-to-Speech Neural2 voices.
+
+        When announcement_title is provided the output is built from SSML so that
+        the title is read with emphasis before the body text.  Otherwise plain
+        text is used (e.g. when called from text_to_speech directly).
+        Authentication uses Application Default Credentials (set
+        GOOGLE_APPLICATION_CREDENTIALS to your service account key path, or run
+        on GCP where the default service account has Cloud TTS access).
+        """
+        voice_cfg = self.CLOUD_TTS_VOICE_OPTIONS[self.voice]
+        client = gcloud_tts.TextToSpeechClient()
+
+        if announcement_title:
+            ssml = self._build_ssml_for_pizzini(announcement_title, text)
+            synthesis_input = gcloud_tts.SynthesisInput(ssml=ssml)
+        else:
+            # Plain text path: still strip slashes before sending
+            clean = re.sub(r'\s*/\s*', ' ', text)
+            synthesis_input = gcloud_tts.SynthesisInput(text=clean)
+
+        voice = gcloud_tts.VoiceSelectionParams(
+            language_code=voice_cfg['language_code'],
+            name=voice_cfg['voice'],
+        )
+        audio_config = gcloud_tts.AudioConfig(
+            audio_encoding=gcloud_tts.AudioEncoding.MP3,
+            speaking_rate=voice_cfg.get('speaking_rate', 0.92),
+        )
+
+        response = client.synthesize_speech(
+            input=synthesis_input,
+            voice=voice,
+            audio_config=audio_config,
+        )
+
+        with open(filepath, 'wb') as f:
+            f.write(response.audio_content)
+
     def _generate_coqui_speech(self, text: str, filepath: str):
         """Generate speech using Coqui TTS (free, high quality)"""
         voice_config = self.COQUI_VOICE_OPTIONS[self.voice]
@@ -422,16 +564,43 @@ class AudioGenerator:
         )
         tts.save(filepath)
     
-    def _generate_azure_speech(self, text: str, filepath: str):
-        """Generate speech using Azure Cognitive Services with SSML for expression"""
+    def _generate_azure_speech(self, text: str, filepath: str,
+                               announcement_title: str = ""):
+        """Generate speech using Azure Cognitive Services with SSML for expression.
+
+        When announcement_title is provided the title is read in title-case (so
+        ALL-CAPS words like 'LA MOLLA' are not spelled out by the engine),
+        followed by a 1.5 s pause before the body text.
+        """
+        import html as html_lib
         speech_config = speechsdk.SpeechConfig(subscription=self.azure_key, region=self.azure_region)
-        
+
         # Get voice name from configuration
         voice_config = self.AZURE_VOICE_OPTIONS[self.voice]
         voice_name = voice_config['voice']
-        
-        # Create SSML with prosody adjustments for old priest voice
-        ssml_text = f"""
+
+        def _title_case_for_tts(s: str) -> str:
+            """Convert ALL-CAPS words to Title Case so TTS reads them as words,
+            not as acronyms.  Single-letter tokens are left untouched."""
+            def fix_word(w: str) -> str:
+                return w.capitalize() if len(w) > 1 and w.isupper() else w
+            return ' '.join(fix_word(w) for w in s.split())
+
+        if announcement_title:
+            title_ssml = html_lib.escape(_title_case_for_tts(announcement_title))
+            body_ssml  = html_lib.escape(text)
+            ssml_text = (
+                f"<speak version='1.0' "
+                f"xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='it-IT'>"
+                f"<voice name='{voice_name}'>"
+                f"<emphasis level='moderate'><prosody rate='{self.azure_rate}' pitch='+2%'>{title_ssml}.</prosody></emphasis>"
+                f"<break time='1500ms'/>"
+                f"<prosody rate='{self.azure_rate}' pitch='{self.azure_pitch}'>{body_ssml}</prosody>"
+                f"</voice></speak>"
+            )
+        else:
+            # Plain content path — no title announcement
+            ssml_text = f"""
         <speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='it-IT'>
             <voice name='{voice_name}'>
                 <prosody rate='{self.azure_rate}' pitch='{self.azure_pitch}'>
@@ -463,8 +632,35 @@ class AudioGenerator:
             Dictionary with audio file path and metadata
         """
         try:
-            # Generate audio directly from content, no intro or date
-            audio_path = self.text_to_speech(content, title, add_intro=False)
+            # Normalize title and content for better voice output before audio generation.
+            # This removes slashes, fixes unmatched brackets, expands abbreviations, etc.
+            formatter = ContentFormatter()
+            normalized_title = formatter.format_title_for_voice(title)
+            normalized_content = formatter.normalize_text_for_voice(content)
+
+            if self.tts_service == 'cloudtts':
+                # Cloud TTS: build one SSML document with title announcement + body
+                safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_'))[:50]
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"{safe_title}_cloudtts_{timestamp}.mp3"
+                audio_path = os.path.join(self.output_dir, filename)
+                self._generate_cloud_tts_speech(
+                    normalized_content, audio_path,
+                    announcement_title=normalized_title,
+                )
+            elif self.tts_service == 'azure':
+                # Azure TTS: SSML with title announcement + 1.5 s break + body
+                safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_'))[:50]
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"{safe_title}_azure_{timestamp}.mp3"
+                audio_path = os.path.join(self.output_dir, filename)
+                self._generate_azure_speech(
+                    normalized_content, audio_path,
+                    announcement_title=normalized_title,
+                )
+            else:
+                # Other TTS services: pass normalized content (no title spoken in audio)
+                audio_path = self.text_to_speech(normalized_content, normalized_title, add_intro=False)
             
             return {
                 'audio_path': audio_path,
@@ -510,6 +706,11 @@ class AudioGenerator:
         if AZURE_TTS_AVAILABLE:
             for key, config in cls.AZURE_VOICE_OPTIONS.items():
                 voices.append({'key': key, 'service': '💰 Azure (Paid - Requires API key)', **config})
+
+        # Add Google Cloud TTS voices if available
+        if CLOUD_TTS_AVAILABLE:
+            for key, config in cls.CLOUD_TTS_VOICE_OPTIONS.items():
+                voices.append({'key': key, 'service': '💰 Google Cloud TTS Neural2 (Paid - Requires GCP)', **config})
         
         return voices
 
@@ -694,13 +895,21 @@ class ImageGenerator:
 class SocialMediaManager:
     """Main class to manage posting across platforms"""
     
-    def __init__(self, audio_voice: str = 'it-female'):
+    def __init__(self, audio_voice: str = None, config_path: str = 'config.json'):
         self.x_poster = None
         self.instagram_poster = None
         self.facebook_poster = None
         self.spotify_poster = None
         self.image_generator = ImageGenerator()
         self.content_formatter = ContentFormatter()
+        # Read voice from config.json if not explicitly provided
+        if audio_voice is None:
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    _cfg = json.load(f)
+                audio_voice = _cfg.get('audio_settings', {}).get('voice', 'gtts-it-male-slow')
+            except Exception:
+                audio_voice = 'gtts-it-male-slow'
         self.audio_generator = AudioGenerator(voice=audio_voice)
     
     def setup_x(self, api_key: str, api_secret: str, access_token: str, access_token_secret: str):

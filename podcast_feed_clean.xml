@@ -1,44 +1,92 @@
-<?xml version="1.0" encoding="utf-8"?>
-<rss xmlns:ns0="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+<?xml version='1.0' encoding='utf-8'?>
+<rss xmlns:ns0="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
   <channel>
     <title>I Pizzini di Don Villa</title>
     <description>I pensieri e gli insegnamenti di Don Villa, condivisi giornalmente attraverso i suoi famosi pizzini</description>
     <language>it</language>
     <link>https://pizzini-b5c63.web.app</link>
     <ns0:author>Don Villa</ns0:author>
-    <ns0:category text="Religion &amp; Spirituality"/>
-    <ns0:image href="https://storage.googleapis.com/pizzini-91da9/podcast_cover.jpg"/>
+    <ns0:category text="Religion &amp; Spirituality" />
+    <ns0:image href="https://storage.googleapis.com/pizzini-91da9/podcast_cover.jpg" />
     <item>
-      <title>Pizzini MATRIMONIO TREInfatti mamma Laura ha sorri</title>
-      <description>Episodio: Pizzini MATRIMONIO TREInfatti mamma Laura ha sorri</description>
-      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/Pizzini%20MATRIMONIO%20TREInfatti%20mamma%20Laura%20ha%20sorri_azure_20260213_142810.mp3" type="audio/mpeg" length="2823900"/>
-      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/Pizzini%20MATRIMONIO%20TREInfatti%20mamma%20Laura%20ha%20sorri_azure_20260213_142810.mp3</link>
-      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/Pizzini%20MATRIMONIO%20TREInfatti%20mamma%20Laura%20ha%20sorri_azure_20260213_142810.mp3</guid>
-      <pubDate>Fri, 13 Feb 2026 14:28:14 GMT</pubDate>
+      <title>DOPO PASQUA TRE</title>
+      <description>Episodio: DOPO PASQUA TRE</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/DOPO%20PASQUA%20TRE_azure_20260228_050017.mp3" type="audio/mpeg" length="3976640" />
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/DOPO%20PASQUA%20TRE_azure_20260228_050017.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/DOPO%20PASQUA%20TRE_azure_20260228_050017.mp3</guid>
+      <pubDate>Sat, 28 Feb 2026 05:00:23 GMT</pubDate>
     </item>
     <item>
-      <title>_azure_20260213_135647.mp3</title>
-      <description>Episodio: _azure_20260213_135647.mp3</description>
-      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_135647.mp3" type="audio/mpeg" length="2561756"/>
-      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_135647.mp3</link>
-      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_135647.mp3</guid>
-      <pubDate>Fri, 13 Feb 2026 13:56:50 GMT</pubDate>
+      <title>MATRIMONIO TRE</title>
+      <description>Episodio: MATRIMONIO TRE</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/MATRIMONIO%20TRE_azure_20260227_050013.mp3" type="audio/mpeg" length="2473206" />
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/MATRIMONIO%20TRE_azure_20260227_050013.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/MATRIMONIO%20TRE_azure_20260227_050013.mp3</guid>
+      <pubDate>Fri, 27 Feb 2026 05:00:17 GMT</pubDate>
     </item>
     <item>
-      <title>_azure_20260213_135221.mp3</title>
-      <description>Episodio: _azure_20260213_135221.mp3</description>
-      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_135221.mp3" type="audio/mpeg" length="3005434"/>
-      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_135221.mp3</link>
-      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_135221.mp3</guid>
-      <pubDate>Fri, 13 Feb 2026 13:52:26 GMT</pubDate>
+      <title>LA GITA</title>
+      <description>Episodio: LA GITA</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/LA%20GITA_azure_20260226_050012.mp3" type="audio/mpeg" length="2534440" />
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/LA%20GITA_azure_20260226_050012.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/LA%20GITA_azure_20260226_050012.mp3</guid>
+      <pubDate>Thu, 26 Feb 2026 05:00:18 GMT</pubDate>
     </item>
     <item>
-      <title>_azure_20260213_050015.mp3</title>
-      <description>Episodio: _azure_20260213_050015.mp3</description>
-      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_050015.mp3" type="audio/mpeg" length="3163276"/>
-      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_050015.mp3</link>
-      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/_azure_20260213_050015.mp3</guid>
-      <pubDate>Fri, 13 Feb 2026 05:00:20 GMT</pubDate>
+      <title>STUPIDITA</title>
+      <description>Episodio: STUPIDITA</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/STUPIDITA_azure_20260225_050015.mp3" type="audio/mpeg" length="2651888" />
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/STUPIDITA_azure_20260225_050015.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/STUPIDITA_azure_20260225_050015.mp3</guid>
+      <pubDate>Wed, 25 Feb 2026 05:00:21 GMT</pubDate>
+    </item>
+    <item>
+      <title>VERIFICA UNO</title>
+      <description>Episodio: VERIFICA UNO</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/VERIFICA%20UNO_azure_20260224_050012.mp3" type="audio/mpeg" length="2513986" />
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/VERIFICA%20UNO_azure_20260224_050012.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/VERIFICA%20UNO_azure_20260224_050012.mp3</guid>
+      <pubDate>Tue, 24 Feb 2026 05:00:18 GMT</pubDate>
+    </item>
+    <item>
+      <title>MIRACOLO UNO</title>
+      <description>Episodio: MIRACOLO UNO</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/MIRACOLO%20UNO_azure_20260223_050012.mp3" type="audio/mpeg" length="2592050" />
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/MIRACOLO%20UNO_azure_20260223_050012.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/MIRACOLO%20UNO_azure_20260223_050012.mp3</guid>
+      <pubDate>Mon, 23 Feb 2026 05:00:17 GMT</pubDate>
+    </item>
+    <item>
+      <title>LA MOLLA</title>
+      <description>Episodio: LA MOLLA</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/LA%20MOLLA_cloudtts_20260306_173819.mp3" type="audio/mpeg" length="592128" />
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/LA%20MOLLA_cloudtts_20260306_173819.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/LA%20MOLLA_cloudtts_20260306_173819.mp3</guid>
+      <pubDate>Sun, 22 Feb 2026 05:00:17 GMT</pubDate>
+    </item>
+    <item>
+      <title>GIUBILEO UNO</title>
+      <description>Episodio: GIUBILEO UNO</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/GIUBILEO%20UNO_azure_20260221_050011.mp3" type="audio/mpeg" length="2811538" />
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/GIUBILEO%20UNO_azure_20260221_050011.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/GIUBILEO%20UNO_azure_20260221_050011.mp3</guid>
+      <pubDate>Sat, 21 Feb 2026 05:00:17 GMT</pubDate>
+    </item>
+    <item>
+      <title>DIRITTI DUE</title>
+      <description>Episodio: DIRITTI DUE</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/DIRITTI%20DUE_azure_20260220_050015.mp3" type="audio/mpeg" length="2366050" />
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/DIRITTI%20DUE_azure_20260220_050015.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/DIRITTI%20DUE_azure_20260220_050015.mp3</guid>
+      <pubDate>Fri, 20 Feb 2026 05:00:20 GMT</pubDate>
+    </item>
+    <item>
+      <title>ANGELUS DUE</title>
+      <description>Episodio: ANGELUS DUE</description>
+      <enclosure url="https://storage.googleapis.com/pizzini-91da9/podcast_audio/ANGELUS%20DUE_azure_20260219_050018.mp3" type="audio/mpeg" length="2993492" />
+      <link>https://storage.googleapis.com/pizzini-91da9/podcast_audio/ANGELUS%20DUE_azure_20260219_050018.mp3</link>
+      <guid isPermaLink="false">https://storage.googleapis.com/pizzini-91da9/podcast_audio/ANGELUS%20DUE_azure_20260219_050018.mp3</guid>
+      <pubDate>Thu, 19 Feb 2026 05:00:24 GMT</pubDate>
     </item>
   </channel>
 </rss>
