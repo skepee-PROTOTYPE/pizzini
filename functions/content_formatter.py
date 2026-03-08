@@ -47,6 +47,25 @@ class ContentFormatter:
     def __init__(self):
         self.used_hashtags = set()  # Track used hashtags to avoid repetition
 
+    # -------------------- Voice/Post helpers --------------------
+    _BIBLE_ABBR = {
+        r"\bMt\.\b": "Matteo",
+        r"\bMc\.\b": "Marco",
+        r"\bLc\.\b": "Luca",
+        r"\bGv\.\b": "Giovanni",
+        r"\bAt\.\b": "Atti",
+    }
+
+    _ROMAN_TO_INT = {
+        "I": 1, "II": 2, "III": 3, "IV": 4, "V": 5,
+        "VI": 6, "VII": 7, "VIII": 8, "IX": 9, "X": 10,
+    }
+
+    _NUM_TO_WORD = {
+        1: "uno", 2: "due", 3: "tre", 4: "quattro", 5: "cinque",
+        6: "sei", 7: "sette", 8: "otto", 9: "nove", 10: "dieci",
+    }
+
     # Basic female names used to choose Santa vs San
     FEMALE_NAMES = {
         'maria','teresa','lucia','anna','cecilia','elisabetta','caterina','rita','chiara','giuseppina','paola'
@@ -153,7 +172,106 @@ class ContentFormatter:
         # Replace isolated " ." or trailing " ." with just a pause
         text = re.sub(r'\s*\.$', '.', text)
         return text.strip()
-    
+
+    def _expand_abbreviations_for_voice(self, text: str) -> str:
+        """Abbreviation expansion used by title voice formatting."""
+        s = text
+        s = re.sub(r"\bSS\.?\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"Santi \1", s)
+        s = re.sub(r"\bS\.?ta\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"Santa \1", s)
+        s = re.sub(r"\bS\.?to\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"Santo \1", s)
+        s = re.sub(r"\bS\.?\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"San \1", s)
+        for pat, rep in self._BIBLE_ABBR.items():
+            s = re.sub(pat, rep, s)
+        return s
+
+    def format_title_for_voice(self, title: str) -> str:
+        """Convert a Title into a voice-friendly string.
+        Rules:
+        - Keep main title as-is.
+        - If a part marker is present in parentheses (UNO/DUE/… or roman/number), add "— parte <n>".
+        - Any other parenthetical note becomes a subtitle after a dash.
+        - Expand common abbreviations like "S.Pietro" → "San Pietro".
+        """
+        if not title:
+            return title
+        # Strip dangling open parentheses that have no matching closing bracket
+        title = re.sub(r'\([^)]*$', '', title).strip()
+        main = title
+        extras = []
+
+        # Extract parenthetical segments
+        parts = re.findall(r"\(([^)]+)\)", title)
+        if parts:
+            main = re.sub(r"\s*\(([^)]+)\)\s*", " ", title).strip()
+            for seg in parts:
+                seg_clean = seg.strip()
+                # Part markers (Italian words)
+                upper = seg_clean.upper()
+                if upper in {"UNO","DUE","TRE","QUATTRO","CINQUE","SEI","SETTE","OTTO","NOVE","DIECI"}:
+                    extras.append(f"parte {seg_clean.lower()}")
+                    continue
+                # Roman numerals
+                if upper in self._ROMAN_TO_INT:
+                    n = self._ROMAN_TO_INT[upper]
+                    extras.append(f"parte {self._NUM_TO_WORD.get(n, str(n))}")
+                    continue
+                # Plain numbers
+                if re.fullmatch(r"\d+", seg_clean):
+                    try:
+                        n = int(seg_clean)
+                        extras.append(f"parte {self._NUM_TO_WORD.get(n, str(n))}")
+                        continue
+                    except ValueError:
+                        pass
+                # Other notes become subtitles
+                extras.append(seg_clean)
+
+        # Expand abbreviations in main
+        spoken_main = self._expand_abbreviations_for_voice(main)
+
+        if extras:
+            return f"{spoken_main} — {', '.join(extras)}"
+        return spoken_main
+
+    def normalize_text_for_voice(self, text: str) -> str:
+        """Normalize content for voice output without changing source XML.
+        - Insert missing spaces after sentence-ending punctuation (.,?!) before a word.
+        - Insert missing space before opening parenthesis.
+        - Remove closing guillemet » / « and replace with nothing or a comma.
+        - Expand Italian abbreviation ecc. → eccetera.
+        - Remove slashes (verse/line separators that TTS reads aloud as 'slash').
+        - Expand S./S.ta/S.to/SS. → San/Santa/Santo/Santi when followed by a name.
+        - Expand common Bible abbreviations (Mt., Gv., Lc., Mc.).
+        - Clean leftover punctuation spacing.
+        """
+        if not text:
+            return text
+        s = text
+        # Fix missing spaces after sentence-ending punctuation followed by a capital letter
+        s = re.sub(r'([.!?])([A-ZÀ-Ü])', r'\1 \2', s)
+        # Fix missing space before opening parenthesis when preceded by a letter/digit
+        s = re.sub(r'([a-zA-Zà-ÿ\d])\(', r'\1 (', s)
+        # Remove guillemets (typographic quote marks common in Italian texts)
+        s = s.replace('»', '').replace('«', '')
+        # Expand ecc. → "e così via."
+        s = re.sub(r'\becc\.\s*', 'e così via. ', s)
+        # Remove slashes - verse or line separators should not be read aloud
+        s = re.sub(r'\s*/\s*', ' ', s)
+        s = re.sub(r'^/+|/+$', '', s).strip()
+        # Saint abbreviations
+        s = re.sub(r"\bSS\.?\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"Santi \1", s)
+        s = re.sub(r"\bS\.?ta\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"Santa \1", s)
+        s = re.sub(r"\bS\.?to\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"Santo \1", s)
+        s = re.sub(r"\bS\.?\s*([A-Z][a-zÀ-ÖØ-öø-ÿ]+)\b", r"San \1", s)
+        # Bible book abbreviations
+        for pat, rep in self._BIBLE_ABBR.items():
+            s = re.sub(pat, rep, s)
+        # Punctuation spacing tidy-up
+        s = re.sub(r'\s+([,;:.!?])', r'\1', s)
+        s = re.sub(r'([,;:.!?])([A-ZÀ-Üa-zà-ÿ(])', r'\1 \2', s)
+        s = re.sub(r"\s{2,}", " ", s).strip()
+        return s
+
     def _create_base_post(self, title: str, content: str, platform: str, limits: Dict) -> str:
         """Create the base post content"""
         # Clean and prepare content
