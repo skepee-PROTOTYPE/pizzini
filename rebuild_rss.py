@@ -72,7 +72,7 @@ image = ET.SubElement(channel, '{http://www.itunes.com/dtds/podcast-1.0.dtd}imag
 for ep in list_latest_audio(limit=4):
     item = ET.SubElement(channel, 'item')
     ET.SubElement(item, 'title').text = _sanitize_for_rss(ep['title'])
-    ET.SubElement(item, 'description').text = _sanitize_for_rss(f"Episodio: {ep['title']}")
+    ET.SubElement(item, 'description').text = _sanitize_for_rss(f"Episodio: {ep['title']} — Voce generata da AI (text-to-speech)")
     
     # Ensure valid URL encoding for filenames (spaces and special chars)
     encoded_filename = quote(ep['filename'])

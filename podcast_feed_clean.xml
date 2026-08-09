@@ -2,12 +2,12 @@
 <rss xmlns:ns0="http://www.w3.org/2005/Atom" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
   <channel>
     <title>I Pizzini di Don Villa</title>
-    <description>I pensieri e gli insegnamenti di Don Villa</description>
+    <description>I pensieri e gli insegnamenti di Don Villa, condivisi giornalmente attraverso i suoi famosi pizzini. La voce narrante è generata mediante tecnologia di sintesi vocale (AI text-to-speech) ai sensi dell'art. 52 del Regolamento UE 2024/1689 sull'Intelligenza Artificiale.</description>
     <link>https://pizzini-b5c63.web.app</link>
     <language>it</language>
     <copyright>© 2026 Don Villa</copyright>
     <itunes:author>Don Villa</itunes:author>
-    <itunes:summary>I pensieri e gli insegnamenti di Don Villa</itunes:summary>
+    <itunes:summary>I pensieri e gli insegnamenti di Don Villa, condivisi giornalmente attraverso i suoi famosi pizzini. La voce narrante è generata mediante tecnologia di sintesi vocale (AI text-to-speech) ai sensi dell'art. 52 del Regolamento UE 2024/1689 sull'Intelligenza Artificiale.</itunes:summary>
     <itunes:explicit>no</itunes:explicit>
     <itunes:category text="Religion &amp; Spirituality"/>
     <itunes:image href="https://storage.googleapis.com/pizzini-91da9/podcast_cover.jpg"/>

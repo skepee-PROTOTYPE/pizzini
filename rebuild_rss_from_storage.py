@@ -90,7 +90,7 @@ rss = ET.Element('rss', {
 channel = ET.SubElement(rss, 'channel')
 
 TITLE       = 'I Pizzini di Don Villa'
-DESCRIPTION = 'I pensieri e gli insegnamenti di Don Villa'
+DESCRIPTION = 'I pensieri e gli insegnamenti di Don Villa, condivisi giornalmente attraverso i suoi famosi pizzini. La voce narrante è generata mediante tecnologia di sintesi vocale (AI text-to-speech) ai sensi dell\'art. 52 del Regolamento UE 2024/1689 sull\'Intelligenza Artificiale.'
 WEBSITE     = 'https://pizzini-b5c63.web.app'
 RSS_URL     = 'https://storage.googleapis.com/pizzini-91da9/podcast_feed.xml'
 COVER_ART   = 'https://storage.googleapis.com/pizzini-91da9/podcast_cover.jpg'
@@ -122,7 +122,7 @@ for e in eps:
     pub = e['dt'].strftime('%a, %d %b %Y %H:%M:%S GMT')
     item = ET.SubElement(channel, 'item')
     ET.SubElement(item, 'title').text = e['title']
-    ET.SubElement(item, 'description').text = f"Episodio: {e['title']}"
+    ET.SubElement(item, 'description').text = f"Episodio: {e['title']} — Voce generata da AI (text-to-speech)"
     ET.SubElement(item, 'itunes:summary').text = f"Episodio: {e['title']}"
     ET.SubElement(item, 'pubDate').text = pub
     ET.SubElement(item, 'guid', {'isPermaLink': 'false'}).text = e['url']
