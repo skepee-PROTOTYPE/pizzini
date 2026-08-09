@@ -5,13 +5,35 @@ Firebase Cloud Functions for Pizzini Social Media Automation - Phase 1
 from firebase_functions import https_fn
 import json
 from datetime import datetime
+import os
 
-# Initialize Firebase Admin
+# firebase_admin is initialized lazily inside each function to avoid slow
+# gRPC/network calls at module load time (which breaks Firebase CLI introspection)
 import firebase_admin
-from firebase_admin import firestore, storage
 
-if not firebase_admin._apps:
-    firebase_admin.initialize_app()
+def _get_db():
+    """Return Firestore client, initializing firebase_admin on first call."""
+    if not firebase_admin._apps:
+        from firebase_admin import credentials
+        _sa_key = os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json')
+        if os.path.exists(_sa_key):
+            firebase_admin.initialize_app(credentials.Certificate(_sa_key))
+        else:
+            firebase_admin.initialize_app()
+    from firebase_admin import firestore
+    return firestore.client()
+
+def _get_storage():
+    """Return Storage bucket, initializing firebase_admin on first call."""
+    if not firebase_admin._apps:
+        from firebase_admin import credentials
+        _sa_key = os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json')
+        if os.path.exists(_sa_key):
+            firebase_admin.initialize_app(credentials.Certificate(_sa_key))
+        else:
+            firebase_admin.initialize_app()
+    from firebase_admin import storage
+    return storage.bucket()
 
 @https_fn.on_request()
 def hello_world(req):
@@ -33,7 +55,7 @@ def update_config(req):
             return {"status": "error", "message": "No JSON data provided"}
         
         # Update configuration in Firestore
-        db = firestore.client()
+        db = _get_db()
         config_ref = db.collection('config').document('social_media')
         config_ref.set(request_json)
         
@@ -50,7 +72,7 @@ def update_config(req):
 def test_config(req):
     """Test Firestore connection"""
     try:
-        db = firestore.client()
+        db = _get_db()
         config_ref = db.collection('config').document('social_media')
         config_doc = config_ref.get()
         
@@ -178,7 +200,7 @@ def manual_post(req):
         import random
         
         # Load configuration from Firestore
-        db = firestore.client()
+        db = _get_db()
         config_ref = db.collection('config').document('social_media')
         config_doc = config_ref.get()
         
@@ -357,7 +379,7 @@ def manual_post(req):
 def get_status(req):
     """Get system status"""
     try:
-        db = firestore.client()
+        db = _get_db()
         
         # Check config
         config_ref = db.collection('config').document('social_media')
@@ -401,7 +423,7 @@ def _scheduled_post_impl():
     import random
 
     # Load configuration from Firestore
-    db = firestore.client()
+    db = _get_db()
     config_ref = db.collection('config').document('social_media')
     config_doc = config_ref.get()
 
@@ -668,7 +690,7 @@ def ai_scheduled_post(req):
     
     try:
         # Initialize Firestore and Storage
-        db = firestore.client()
+        db = _get_db()
         bucket = storage.bucket('pizzini-91da9')
         
         # Load configuration from Firestore
